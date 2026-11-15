@@ -25,10 +25,21 @@ npm run build      # contrôle de types + construction dans dist/
 
 Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
+### Test de publication sur Cloudflare (0.2.1)
+
+Essai d'un hébergement « pro » en parallèle de GitHub Pages (l'adresse officielle ne change pas pendant l'essai).
+
+- Projet Cloudflare : Workers & Pages → `myrpgapp`, relié à ce dépôt, redéployé à chaque push sur `main`.
+- Réglages du projet : commande de build `npm run build`, commande de déploiement `npx wrangler deploy`.
+- `wrangler.jsonc` (à la racine) dit à wrangler de publier le dossier `dist`. Son champ `name` doit rester identique au nom du projet Cloudflare.
+- Le fichier `public/CNAME` ne sert qu'à GitHub Pages ; Cloudflare l'ignore.
+- Bascule du sous-domaine : pas encore faite (GitHub Pages reste la version officielle).
+
 ## Fonctions livrées
 
 | Version | Fonction |
 |---|---|
+| 0.2.1 | Réparation de la publication Cloudflare (ajout de `wrangler.jsonc`) ; aucun changement dans l'app |
 | 0.2.0 | Dés plein écran (arrivée par le bas, rebonds sur les bords, effacement en fondu après 3 s) ; dés noirs ou blancs aux chiffres rouges, plus gros ; bruit des dés (roulement et chocs), les deux réglages dans le menu ⚙ |
 | 0.1.0 | Squelette PWA (tiroir, bouton Retour, dernier écran, aide « i », installation, hors ligne) ; lanceur de dés 3D de L'Anneau Unique (dé du Destin d12 + dés de Maîtrise d6), historique des jets |
 
@@ -72,6 +83,7 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 - Pas de dés visibles : l'appareil n'a pas WebGL, un message l'indique, le jet marche quand même.
 - Pas de son : vérifie « Son des dés » dans le menu ⚙ (et le volume « média » du téléphone, pas la sonnerie).
 - Nouvelle version non visible : menu ⚙ → recharger, ou fermer et rouvrir l'app.
+- Cloudflare : l'étape « Deploying » échoue avec « Missing entry-point » : `wrangler.jsonc` manque ou son `assets.directory` ne pointe pas sur `./dist`.
 
 ## Feuille de route
 

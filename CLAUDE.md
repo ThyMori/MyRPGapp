@@ -3,7 +3,7 @@
 App de jeu de rôle (PWA) : dés 3D, fiches, oracles. Cercle privé, données sur l'appareil. Dépôt public : pas de texte de règles copié.
 
 ## Pile
-TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hébergées. GitHub Pages en mode « GitHub Actions », domaine myrpgapp.thierry-morin.com (public/CNAME). Pas de base de données.
+TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hébergées. GitHub Pages en mode « GitHub Actions », domaine myrpgapp.thierry-morin.com (public/CNAME). Essai en cours sur Cloudflare (projet `myrpgapp`, `wrangler.jsonc` publie `dist/`, nom à garder identique au projet) ; la bascule du domaine n'est pas faite. Pas de base de données.
 
 ## Conventions
 - Textes en français, tutoiement. Chaque ligne de code commentée en français.

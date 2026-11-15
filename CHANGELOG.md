@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.2.1 — 2026-11-15
+- Publication Cloudflare : ajout de wrangler.jsonc (dossier dist) pour réparer l'étape Deploying
+
 ## 0.2.0 — 2026-11-15
 - Dés plein écran : ils arrivent du bas, rebondissent sur les bords et se posent sur tout l'écran, puis s'effacent
 - Dés noirs ou blancs au choix (menu ⚙), chiffres et symboles rouges, plus gros
