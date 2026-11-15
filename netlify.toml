@@ -1,0 +1,12 @@
+# Réglages de publication sur Netlify : lus automatiquement à chaque déploiement.
+# Ainsi rien n'est à régler à la main dans l'interface, et tout est versionné avec le code.
+
+[build]
+  # Commande qui contrôle les types puis construit le site (voir package.json).
+  command = "npm run build"
+  # Dossier produit par Vite, envoyé tel quel sur le réseau de Netlify.
+  publish = "dist"
+
+[build.environment]
+  # Version de Node utilisée pour construire : Vite 8 en demande une récente.
+  NODE_VERSION = "22"

@@ -33,12 +33,22 @@ Essai d'un hébergement « pro » en parallèle de GitHub Pages (l'adresse offic
 - Réglages du projet : commande de build `npm run build`, commande de déploiement `npx wrangler deploy`.
 - `wrangler.jsonc` (à la racine) dit à wrangler de publier le dossier `dist`. Son champ `name` doit rester identique au nom du projet Cloudflare.
 - Le fichier `public/CNAME` ne sert qu'à GitHub Pages ; Cloudflare l'ignore.
-- Bascule du sous-domaine : pas encore faite (GitHub Pages reste la version officielle).
+- Bascule du sous-domaine : impossible tel quel. Cloudflare ne relie un domaine à un Worker que s'il gère lui-même `thierry-morin.com` (message « No zones match »). Il faudrait déplacer tout le domaine chez Cloudflare, ce qui touche le site principal : non fait.
+
+### Test de publication sur Netlify (0.2.2)
+
+Même principe, mais Netlify accepte un simple CNAME chez Squarespace.
+
+- `netlify.toml` (à la racine) donne la commande de build, le dossier `dist` et Node 22 : rien à régler à la main dans Netlify.
+- Mise en place : https://app.netlify.com → Add new project → Import an existing project → GitHub → `ThyMori/MyRPGapp`.
+- Étape suivante, une fois l'adresse en `.netlify.app` validée : Domain management → Add a domain → CNAME chez Squarespace (hôte `myrpgapp`) vers l'adresse donnée par Netlify, puis HTTPS automatique.
+- Offre gratuite à quota mensuel de crédits : vérifier la page de tarifs Netlify avant tout usage pro.
 
 ## Fonctions livrées
 
 | Version | Fonction |
 |---|---|
+| 0.2.2 | Essai de publication sur Netlify (ajout de `netlify.toml`) ; aucun changement dans l'app |
 | 0.2.1 | Réparation de la publication Cloudflare (ajout de `wrangler.jsonc`) ; aucun changement dans l'app |
 | 0.2.0 | Dés plein écran (arrivée par le bas, rebonds sur les bords, effacement en fondu après 3 s) ; dés noirs ou blancs aux chiffres rouges, plus gros ; bruit des dés (roulement et chocs), les deux réglages dans le menu ⚙ |
 | 0.1.0 | Squelette PWA (tiroir, bouton Retour, dernier écran, aide « i », installation, hors ligne) ; lanceur de dés 3D de L'Anneau Unique (dé du Destin d12 + dés de Maîtrise d6), historique des jets |

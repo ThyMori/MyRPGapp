@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.2.2 — 2026-11-15
+- Essai de publication sur Netlify : ajout de netlify.toml (build, dossier dist, Node 22)
+
 ## 0.2.1 — 2026-11-15
 - Publication Cloudflare : ajout de wrangler.jsonc (dossier dist) pour réparer l'étape Deploying
 
