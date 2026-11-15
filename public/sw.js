@@ -1,7 +1,7 @@
 // Service worker : permet à l'app de démarrer sans réseau.
 // Stratégie « réseau d'abord » : on prend toujours la dernière version en ligne, et le cache ne sert qu'en secours.
 // La ligne VERSION est mise à jour par scripts/bump-version.mjs (ne pas la modifier à la main).
-const VERSION = '0.2.4';
+const VERSION = '0.2.5';
 // Nom du cache : change à chaque version, ce qui supprime automatiquement les anciens.
 const CACHE = 'myrpgapp-' + VERSION;
 // Fichiers au nom fixe à garder dès l'installation. Les fichiers au nom variable (assets/…) sont mis en cache au fil de l'eau.
@@ -27,7 +27,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// À chaque requête : réseau d'abord, cache en secours.
+// Cherche une copie en cache : celle de la requête, sinon la page d'accueil si c'est une navigation.
+function secours(requete) {
+  return caches
+    .match(requete) // cherche la copie exacte de cette requête
+    .then((enCache) => enCache || (requete.mode === 'navigate' ? caches.match('/index.html') : undefined)); // à défaut, la page d'accueil pour une navigation
+}
+
+// À chaque requête : réseau d'abord, cache en secours (réseau coupé OU serveur qui répond une erreur).
 self.addEventListener('fetch', (event) => {
   const requete = event.request; // la requête interceptée
   if (requete.method !== 'GET') return; // on ne touche qu'aux lectures
@@ -39,13 +46,11 @@ self.addEventListener('fetch', (event) => {
         if (reponse.ok) {
           const copie = reponse.clone(); // une réponse ne se lit qu'une fois : on en garde une copie
           caches.open(CACHE).then((cache) => cache.put(requete, copie)); // range la copie dans le cache
+          return reponse; // renvoie la réponse du réseau
         }
-        return reponse; // renvoie la réponse du réseau
+        // Le serveur a répondu une erreur (404, 500…) : on préfère la copie en cache si elle existe.
+        return secours(requete).then((enCache) => enCache || reponse); // sinon on rend l'erreur telle quelle
       })
-      .catch(() =>
-        caches
-          .match(requete) // pas de réseau : cherche dans le cache
-          .then((enCache) => enCache || (requete.mode === 'navigate' ? caches.match('/index.html') : Response.error())), // à défaut, la page d'accueil pour une navigation
-      ),
+      .catch(() => secours(requete).then((enCache) => enCache || Response.error())), // pas de réseau : cache, sinon erreur réseau
   );
 });

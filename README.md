@@ -37,6 +37,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.2.5 | Mise à jour fiable lors d'un changement d'hébergeur ou d'une panne : si le serveur répond 404 ou une erreur 5xx, l'app s'affiche depuis le cache (comme hors ligne) ; une erreur n'est jamais gardée en cache ; 9 tests du service worker |
 | 0.2.4 | Nettoyage après l'essai : suppression de `wrangler.jsonc` et de `public/CNAME` ; aucun changement dans l'app |
 | 0.2.3 | Netlify devient l'hébergement officiel ; tests et contrôle de version avant chaque publication ; arrêt de la publication GitHub Pages ; aucun changement dans l'app |
 | 0.2.2 | Essai de publication sur Netlify (ajout de `netlify.toml`) ; aucun changement dans l'app |
