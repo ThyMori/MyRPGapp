@@ -20,15 +20,15 @@ const GLYPHS: Record<GlyphName, { stroke: string[]; fill: string[] }> = {
   },
 };
 
-// Dessine un symbole sur un canevas 2D. (x, y) = centre, size = côté du cadre, color = couleur CSS.
-export function drawGlyph(ctx: CanvasRenderingContext2D, name: GlyphName, x: number, y: number, size: number, color: string): void {
+// Dessine un symbole sur un canevas 2D. (x, y) = centre, size = côté du cadre, color = couleur CSS, epaisseur = épaisseur du trait.
+export function drawGlyph(ctx: CanvasRenderingContext2D, name: GlyphName, x: number, y: number, size: number, color: string, epaisseur = 8): void {
   const g = GLYPHS[name]; // tracés du symbole
   ctx.save(); // sauvegarde l'état du canevas
   ctx.translate(x - size / 2, y - size / 2); // place le coin haut-gauche du cadre
   ctx.scale(size / 100, size / 100); // met à l'échelle le cadre de 100 × 100
   ctx.strokeStyle = color; // couleur des traits
   ctx.fillStyle = color; // couleur des formes pleines
-  ctx.lineWidth = 8; // épaisseur du trait (dans le cadre de 100)
+  ctx.lineWidth = epaisseur; // épaisseur du trait (dans le cadre de 100)
   ctx.lineCap = 'round'; // bouts arrondis
   ctx.lineJoin = 'round'; // angles arrondis
   for (const d of g.stroke) ctx.stroke(new Path2D(d)); // trace chaque trait

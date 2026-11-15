@@ -26,14 +26,11 @@
   --warn: hsl(44 85% 60%); /* avertissement, rappel */
   --bad: hsl(2 66% 62%); /* échec, erreur */
 
-  /* Couleurs des dés 3D (lues par src/dice3d/colors.ts). */
-  --die-feat-body: hsl(var(--h) 14% 17%); /* corps du dé du Destin : pierre sombre */
-  --die-feat-ink: hsl(var(--h) 62% 70%); /* chiffres et rune de Gandalf : or clair */
-  --die-feat-eye: hsl(6 80% 58%); /* œil de Sauron : braise */
-  --die-succ-body: hsl(var(--h) 32% 84%); /* dés de Maîtrise : ivoire */
-  --die-succ-ink: hsl(var(--h) 28% 14%); /* chiffres des dés de Maîtrise */
-  --die-succ-rune: hsl(var(--h) 60% 30%); /* rune des dés de Maîtrise */
-  --die-edge: hsl(var(--h) 34% 42%); /* arêtes des dés */
+  /* Couleurs des dés 3D (lues par src/dice3d/colors.ts). Dés noirs par défaut ; l'utilisateur choisit noir ou blanc
+     (attribut data-dice posé sur <html> par src/ui/prefs.ts). Chiffres et symboles toujours rouges. */
+  --die-body: hsl(0 0% 7%); /* corps des dés : noir */
+  --die-ink: hsl(2 90% 56%); /* chiffres, œil et runes : rouge vif, lisible sur le noir */
+  --die-edge: hsl(0 0% 34%); /* arêtes : gris, pour lire la forme d'un dé noir */
 
   /* Polices (hébergées dans l'app, importées dans src/main.ts). */
   --font-title: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; /* titres */
@@ -48,4 +45,11 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px); /* bas */
   --safe-left: env(safe-area-inset-left, 0px); /* gauche */
   --safe-right: env(safe-area-inset-right, 0px); /* droite */
+}
+
+/* Dés blancs : même rouge, un peu plus profond pour garder le contraste sur le blanc. */
+:root[data-dice='white'] {
+  --die-body: hsl(40 22% 95%); /* corps des dés : blanc cassé */
+  --die-ink: hsl(2 82% 42%); /* chiffres, œil et runes : rouge profond */
+  --die-edge: hsl(40 8% 60%); /* arêtes : gris chaud */
 }

@@ -1,6 +1,6 @@
 // Écran « Lanceur de dés » : réglages, lancer, résultat, historique.
 // Le hasard vient de src/rules (tirage cryptographique) ; la scène 3D ne fait que montrer le résultat tiré.
-import { DiceStage } from '../dice3d/DiceStage'; // scène 3D
+import { DiceStage } from '../dice3d/DiceStage'; // scène 3D plein écran
 import { glyphSvg, type GlyphName } from '../dice3d/glyphs'; // symboles dessinés
 import type { DieKind } from '../dice3d/layout'; // types de dés
 import { cryptoRng } from '../rules/rng'; // tirage sûr
@@ -9,13 +9,13 @@ import { dayLabel, timeLabel } from '../state/dayLabel'; // libellés de jour et
 import { HISTORY_MAX, sanitizeHistory, sanitizeRollInput, type HistoryEntry } from '../state/settings'; // réglages mémorisés
 import { loadJson, saveJson } from '../state/storage'; // mémoire locale
 import { all, byId } from '../ui/dom'; // recherche d'éléments
+import { initPrefs, soundEnabled } from '../ui/prefs'; // couleur des dés et son
 import { showToast } from '../ui/toast'; // messages
 import { VOCAB } from '../vocab'; // vocabulaire du jeu
 
 let input: RollInput = sanitizeRollInput(undefined); // réglages courants
 let history: HistoryEntry[] = []; // jets passés, du plus récent au plus ancien
 let stage: DiceStage | null = null; // scène 3D (null si indisponible)
-let aLance = false; // un jet a-t-il déjà été fait depuis l'ouverture ?
 
 // Types de dés correspondant aux réglages : dé(s) du Destin d'abord, puis dés de Maîtrise.
 function kindsFor(i: RollInput): DieKind[] {
@@ -37,15 +37,13 @@ function syncUI(): void {
     const dir = Number(b.dataset.dir); // sens du bouton (−1 ou +1)
     b.disabled = (dir < 0 && v <= min) || (dir > 0 && v >= max); // grise le bouton au bout de la plage
   }
-  byId('stage-hint').textContent = aLance ? 'Touche pour relancer' : 'Touche les dés pour lancer'; // consigne
 }
 
-// Modifie les réglages, les mémorise et remet les dés au repos.
+// Modifie les réglages et les mémorise.
 function change(patch: Partial<RollInput>): void {
   input = normalizeInput({ ...input, ...patch }); // réglages corrigés
   saveJson('roll', input); // mémorise
   syncUI(); // met l'affichage à jour
-  stage?.setDice(kindsFor(input)); // nouveaux dés au repos
 }
 
 // Fabrique une pastille de dé (texte et/ou symbole), avec un libellé pour les lecteurs d'écran.
@@ -73,7 +71,7 @@ function renderResult(o: Outcome | null): void {
     box.className = 'result'; // style neutre
     const p = document.createElement('p'); // message
     p.className = 'result-empty'; // style
-    p.textContent = "Aucun jet pour l'instant. Touche les dés ou « Lancer » !"; // état vide : dit quoi faire
+    p.textContent = "Aucun jet pour l'instant. Touche « Lancer » !"; // état vide : dit quoi faire
     box.appendChild(p); // ajoute
     return;
   }
@@ -190,7 +188,7 @@ function newId(): string {
 // Lance les dés. Si un lancer est en cours, un toucher le termine tout de suite.
 function doRoll(): void {
   if (stage?.isRolling()) {
-    stage.finish(); // saute à l'arrivée
+    stage.finish(true); // un appui pendant le lancer : les dés sautent à l'arrivée, le son s'arrête
     return;
   }
   const reglages = normalizeInput(input); // réglages propres
@@ -198,8 +196,6 @@ function doRoll(): void {
   const outcome = evaluate(reglages, raw); // 2. L'interprétation selon les règles
   const faces: FeatFace[] = [...raw.featFaces, ...raw.successFaces]; // faces à montrer, dans l'ordre des dés
   const reduits = [...raw.featFaces.map((_, i) => raw.featFaces.length > 1 && i !== outcome.keptIndex), ...raw.successFaces.map(() => false)]; // dé du Destin écarté : réduit
-  aLance = true; // un jet a eu lieu
-  syncUI(); // met à jour la consigne
   const btn = byId('btn-roll'); // bouton Lancer
   btn.setAttribute('aria-busy', 'true'); // occupé pendant l'animation
   const terminer = () => {
@@ -209,20 +205,20 @@ function doRoll(): void {
     if (!saveJson('history', history)) showToast("Impossible de sauvegarder l'historique sur cet appareil.", 'error'); // prévient si le stockage est bloqué
     renderHistory(); // redessine
   };
-  if (stage) stage.roll(faces, terminer, reduits); // 4. L'ANIMATION 3D, qui atterrit sur les faces tirées
+  if (stage) stage.roll({ kinds: kindsFor(reglages), faces, reduits, sound: soundEnabled(), onDone: terminer }); // 4. L'ANIMATION 3D plein écran, qui atterrit sur les faces tirées
   else terminer(); // sans 3D : résultat immédiat
 }
 
-// Prépare la scène 3D une fois la police du titre chargée (les chiffres des dés l'utilisent).
+// Prépare la scène 3D une fois la police des chiffres chargée (les dés l'utilisent pour écrire leurs faces).
 async function startStage(): Promise<void> {
   try {
-    await Promise.race([document.fonts.load('700 100px "Cormorant Garamond"'), new Promise((r) => setTimeout(r, 1500))]); // attend la police (1,5 s au plus)
-    stage = DiceStage.create(byId<HTMLCanvasElement>('dice-canvas'), byId('stage')); // crée la scène
+    await Promise.race([document.fonts.load('600 100px "Source Sans 3"'), new Promise((r) => setTimeout(r, 1500))]); // attend la police (1,5 s au plus)
+    stage = DiceStage.create(byId<HTMLCanvasElement>('dice-canvas')); // crée la scène plein écran
     if (!stage) {
       byId('stage-fallback').hidden = false; // explique que la 3D est indisponible
       return;
     }
-    stage.setDice(kindsFor(input)); // dés au repos
+    stage.warmUp(); // prépare la 3D pour que le premier lancer soit fluide
   } catch (e) {
     console.warn('Scène 3D non démarrée :', e); // trace pour le dépannage
     byId('stage-fallback').hidden = false; // l'app reste utilisable sans 3D
@@ -232,6 +228,7 @@ async function startStage(): Promise<void> {
 // Branche l'écran.
 export function initRoller(): void {
   input = sanitizeRollInput(loadJson('roll')); // derniers réglages
+  initPrefs(() => stage?.refreshColors()); // couleur des dés et son (applique la couleur avant la création de la 3D)
   history = sanitizeHistory(loadJson('history')); // historique mémorisé
   for (const b of all<HTMLButtonElement>('[data-step]')) {
     b.addEventListener('click', () => {
@@ -244,14 +241,7 @@ export function initRoller(): void {
   byId('chk-weary').addEventListener('change', (e) => change({ weary: (e.target as HTMLInputElement).checked })); // Épuisé
   byId('chk-miserable').addEventListener('change', (e) => change({ miserable: (e.target as HTMLInputElement).checked })); // Mélancolique
   byId('btn-roll').addEventListener('click', doRoll); // bouton Lancer
-  const table = byId('stage'); // table de dés
-  table.addEventListener('click', doRoll); // un appui sur les dés lance
-  table.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault(); // évite le défilement de la page avec Espace
-      doRoll(); // lance au clavier
-    }
-  });
+  byId('dice-canvas').addEventListener('click', doRoll); // pendant le lancer, le calque plein écran capte l'appui : il termine le lancer
   byId('btn-clear').addEventListener('click', () => {
     if (history.length === 0) {
       showToast("L'historique est déjà vide."); // rien à faire

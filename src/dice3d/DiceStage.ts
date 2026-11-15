@@ -1,23 +1,39 @@
-// Scène 3D des dés (Three.js). Principe : le résultat est TIRÉ AU SORT ailleurs (src/rules), cette scène ne fait que
-// l'ANIMER : les dés roulent environ 1 seconde puis s'immobilisent exactement sur les faces tirées.
+// Scène 3D des dés (Three.js), dessinée sur TOUT l'écran, par-dessus l'app.
+// Principe : le résultat est TIRÉ AU SORT ailleurs (src/rules). Cette scène ne fait que l'ANIMER : les dés arrivent du bas de l'écran,
+// rebondissent sur les bords et s'immobilisent exactement sur les faces tirées. Quelques secondes après, ils s'effacent en fondu.
 import {
   AmbientLight, BoxGeometry, DirectionalLight, DodecahedronGeometry, EdgesGeometry, Group, LineBasicMaterial, LineSegments, Matrix4, Mesh,
   MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SRGBColorSpace, CanvasTexture, Vector3, WebGLRenderer,
   type BufferGeometry,
 } from 'three'; // briques de la 3D
+import { startDiceSound, stopDiceSound, type SoundEvent } from '../audio/diceSound'; // sons
 import type { FeatFace } from '../rules/tor'; // faces du dé du Destin
 import { readPalette, type DicePalette } from './colors'; // couleurs lues dans le CSS
 import { CUBE_VALUES, cubeFaces, dodecaFaces, featValuesForFaces, type FaceInfo } from './faces'; // faces des dés
 import { makeLabelTexture } from './labels'; // étiquettes des faces
-import { layoutDice, type DieKind } from './layout'; // disposition des dés
+import { scatterDice, type DieKind } from './layout'; // répartition des dés posés
 import { quaternionForFace } from './orientation'; // orientation d'atterrissage
+import { easeOut, flightPosition, impactEvents, planFlight, type Flight, type Walls } from './trajectory'; // trajectoires
 
 // Durée d'un lancer, en millisecondes (environ 1 seconde).
-const DUREE_MS = 1000;
+const DUREE_MS = 1100;
 // Décalage entre deux dés pour que le lancer paraisse naturel.
 const DECALAGE_MS = 25;
-// Face montrée par un dé au repos avant le premier lancer.
-const FACE_REPOS: Record<DieKind, FeatFace> = { feat: 10, success: 5 };
+// Durée pendant laquelle les dés restent visibles une fois posés, puis durée du fondu.
+const MAINTIEN_MS = 3000;
+const FONDU_MS = 600;
+// Champ de vision de la caméra, en degrés.
+const CHAMP = 32;
+// Retrait des dés posés par rapport aux bords : la perspective grossit un peu les dés qui se trouvent près du bord.
+const RETRAIT = 0.45;
+// Hauteur approximative du dessus d'un dé posé (sert à corriger l'effet de perspective sur les bords).
+const HAUTEUR_DES = 1.7;
+// Distance entre le centre d'un dé et le mur au moment du choc.
+const MARGE_MUR = 0.9;
+// Taille des dés à l'écran : une « unité » de la scène vaut entre 38 et 72 pixels (selon le plus petit côté de l'écran).
+const PX_MIN = 38;
+const PX_MAX = 72;
+const PX_DIVISEUR = 7;
 
 // Modèle partagé par tous les dés d'un même type (géométrie, matières, faces).
 interface Template {
@@ -35,13 +51,13 @@ interface Template {
 
 // Un dé affiché.
 interface DieView {
-  kind: DieKind; // type de dé
   tpl: Template; // modèle utilisé
   group: Group; // objet 3D du dé
   shadow: Mesh; // ombre portée sous le dé
   size: number; // échelle de ce dé (plus petit s'il est écarté)
-  rest: Vector3; // position finale (posé sur la table)
-  start: Vector3; // position de départ du lancer
+  restY: number; // hauteur du centre quand le dé est posé
+  flight: Flight; // trajectoire (départ, rebonds, arrivée)
+  startY: number; // hauteur de départ
   axis: Vector3; // axe de rotation de la roulade
   turns: number; // nombre de tours de la roulade
   finalQuat: Quaternion; // orientation finale
@@ -49,19 +65,28 @@ interface DieView {
   duration: number; // durée du lancer de ce dé
 }
 
-// Constante utilitaire : copie d'un nombre entre deux bornes.
+// Ce qu'il faut pour lancer les dés.
+export interface RollSpec {
+  kinds: DieKind[]; // type de chaque dé
+  faces: FeatFace[]; // face tirée de chaque dé (le tirage est fait AVANT, ailleurs)
+  reduits: boolean[]; // dés à réduire (le dé du Destin écarté quand on est favorisé ou défavorisé)
+  sound: boolean; // jouer les sons ?
+  onDone: () => void; // appelé à l'arrivée des dés
+}
+
+// Constante utilitaire : ramène un nombre entre deux bornes.
 const borner = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+// Nombre aléatoire entre a et b (pour l'allure du lancer ; jamais pour le résultat).
+const entre = (a: number, b: number) => a + Math.random() * (b - a);
 
 export class DiceStage {
   private renderer: WebGLRenderer; // moteur de rendu
   private scene = new Scene(); // scène
-  private camera = new PerspectiveCamera(32, 1, 0.1, 100); // caméra
+  private camera = new PerspectiveCamera(CHAMP, 1, 0.1, 200); // caméra
   private palette: DicePalette; // couleurs courantes
   private templates!: Record<DieKind, Template>; // modèles des deux types de dés
   private dice: DieView[] = []; // dés affichés
-  private kinds: DieKind[] = []; // types demandés
-  private shrink: boolean[] = []; // dés à réduire (dé du Destin écarté)
-  private shown: FeatFace[] = []; // faces actuellement montrées
+  private shown: FeatFace[] = []; // faces finales
   private shadowTex: CanvasTexture; // texture de l'ombre
   private shadowGeo = new PlaneGeometry(1, 1); // plan de l'ombre
   private labelGeoCache = new Map<number, PlaneGeometry>(); // plans d'étiquette selon la taille
@@ -69,41 +94,44 @@ export class DiceStage {
   private t0 = 0; // instant de départ du lancer
   private raf = 0; // identifiant de l'animation en cours
   private onDone: (() => void) | null = null; // appelé à l'arrivée des dés
-  private largeur = 3; // largeur occupée par les dés
-  private observer: ResizeObserver; // surveille la taille de la zone
+  private halfW = 3; // demi-largeur visible de la table (unités de la scène)
+  private halfH = 6; // demi-hauteur visible de la table
+  private grossi = 1.1; // grossissement de la perspective pour un dé posé (les dés près du bord paraissent repoussés vers l'extérieur)
+  private walls: Walls = { x: 2, top: 5 }; // murs contre lesquels les dés rebondissent
+  private lastW = 0; // largeur de l'écran à la dernière mesure
+  private lastH = 0; // hauteur de l'écran à la dernière mesure
+  private holdTimer = 0; // minuteur « les dés restent visibles »
+  private fadeTimer = 0; // minuteur « fondu terminé »
+  private observer: ResizeObserver; // surveille la taille de l'écran
   private mouvementReduit: MediaQueryList; // préférence « réduire les animations »
 
   // Crée la scène, ou rend null si le navigateur ne sait pas faire de 3D.
-  static create(canvas: HTMLCanvasElement, host: HTMLElement): DiceStage | null {
+  static create(canvas: HTMLCanvasElement): DiceStage | null {
     try {
-      return new DiceStage(canvas, host); // tente de créer la scène
+      return new DiceStage(canvas); // tente de créer la scène
     } catch (e) {
       console.warn('3D indisponible :', e); // garde une trace pour le dépannage
       return null; // l'app continue sans 3D
     }
   }
 
-  private constructor(
-    private canvas: HTMLCanvasElement,
-    private host: HTMLElement,
-  ) {
+  private constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true }); // peut échouer sans WebGL
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); // netteté sans surcharge
-    this.renderer.setClearColor(0x000000, 0); // fond transparent : on voit la table du CSS
+    this.renderer.setClearColor(0x000000, 0); // fond transparent : on voit l'app derrière les dés
     this.mouvementReduit = window.matchMedia('(prefers-reduced-motion: reduce)'); // préférence de l'appareil
     this.camera.up.set(0, 0, -1); // le haut de l'écran correspond à -Z sur la table
-    this.scene.add(new AmbientLight(0xffffff, 1.15)); // lumière douce partout
-    const soleil = new DirectionalLight(0xffffff, 2.1); // lumière directionnelle
+    this.scene.add(new AmbientLight(0xffffff, 1.2)); // lumière douce partout
+    const soleil = new DirectionalLight(0xffffff, 2.2); // lumière directionnelle
     soleil.position.set(-4, 9, 5); // vient du haut-gauche, côté joueur
     this.scene.add(soleil); // ajoute à la scène
     this.shadowGeo.rotateX(-Math.PI / 2); // l'ombre est couchée sur la table
     this.shadowTex = this.makeShadowTexture(); // texture d'ombre floue
     this.palette = readPalette(); // couleurs actuelles
     this.templates = { feat: this.buildTemplate('feat'), success: this.buildTemplate('success') }; // modèles de dés
-    this.observer = new ResizeObserver(() => this.resize()); // réagit aux changements de taille
-    this.observer.observe(host); // surveille la zone
+    this.observer = new ResizeObserver(() => this.onResize()); // réagit aux changements de taille (rotation du téléphone…)
+    this.observer.observe(canvas); // surveille l'écran
     this.canvas.addEventListener('webglcontextrestored', () => this.render()); // redessine si le navigateur rend le contexte
-    this.resize(); // première mise à la taille
   }
 
   // Ombre : disque noir flou, dessiné une fois.
@@ -128,18 +156,18 @@ export class DiceStage {
     const body = feat ? new DodecahedronGeometry(1, 0) : new BoxGeometry(1, 1, 1); // d12 ou cube
     const faces = feat ? dodecaFaces() : cubeFaces(); // faces
     const values: FeatFace[] = feat ? featValuesForFaces(faces) : CUBE_VALUES; // valeurs des faces
-    const scale = feat ? 1 : 1.3; // échelle (le cube est agrandi pour avoir une taille voisine)
+    const scale = feat ? 1 : 1.5; // échelle (le cube est agrandi pour avoir une taille voisine du d12)
     return {
       body, // forme
       edges: new EdgesGeometry(body, 15), // arêtes visibles
-      bodyMat: new MeshStandardMaterial({ color: feat ? p.featBody : p.succBody, roughness: 0.5, metalness: 0.12, flatShading: true }), // corps mat
+      bodyMat: new MeshStandardMaterial({ color: p.body, roughness: 0.38, metalness: 0.05, flatShading: true }), // corps lisse
       edgeMat: new LineBasicMaterial({ color: p.edge }), // arêtes
       faces, // faces
       values, // valeurs
       labels: new Map(), // matières d'étiquette (créées à la demande)
       scale, // échelle
       restY: faces[0].center.length() * scale, // hauteur du centre posé sur une face
-      labelSize: feat ? 0.62 : 0.72, // taille de l'étiquette
+      labelSize: feat ? 0.98 : 0.96, // étiquette presque aussi grande que la face
     };
   }
 
@@ -164,7 +192,7 @@ export class DiceStage {
     return g; // plan prêt
   }
 
-  // Construit un dé à partir de son modèle.
+  // Construit un dé à partir de son modèle et l'ajoute à la scène.
   private createDie(kind: DieKind, reduit: boolean): DieView {
     const tpl = this.templates[kind]; // modèle
     const group = new Group(); // objet 3D du dé
@@ -181,7 +209,11 @@ export class DiceStage {
     group.scale.setScalar(size); // applique l'échelle
     const shadow = new Mesh(this.shadowGeo, new MeshBasicMaterial({ map: this.shadowTex, transparent: true, depthWrite: false, opacity: 0.55 })); // ombre
     this.scene.add(group, shadow); // ajoute à la scène
-    return { kind, tpl, group, shadow, size, rest: new Vector3(), start: new Vector3(), axis: new Vector3(0, 1, 0), turns: 0, finalQuat: new Quaternion(), delay: 0, duration: DUREE_MS }; // état initial
+    return {
+      tpl, group, shadow, size, restY: tpl.restY * (size / tpl.scale), // le dé réduit se pose plus bas
+      flight: { start: { x: 0, z: 0 }, virtual: { x: 0, z: 0 }, rest: { x: 0, z: 0 } }, // trajectoire provisoire
+      startY: 5, axis: new Vector3(0, 1, 0), turns: 0, finalQuat: new Quaternion(), delay: 0, duration: DUREE_MS, // état initial
+    };
   }
 
   // Orientation qui montre la valeur demandée vers le haut.
@@ -191,87 +223,79 @@ export class DiceStage {
     return quaternionForFace(f.normal, f.up, yaw); // orientation correspondante
   }
 
-  // Remplace les dés affichés : kinds = type de chaque dé, reduit = dés à réduire.
-  setDice(kinds: DieKind[], reduit: boolean[] = []): void {
-    this.finish(); // termine un éventuel lancer en cours
-    this.clearDice(); // retire les anciens dés
-    this.kinds = kinds; // mémorise
-    this.shrink = kinds.map((_, i) => reduit[i] === true); // dés à réduire
-    this.shown = kinds.map((k) => FACE_REPOS[k]); // faces de repos
-    this.dice = kinds.map((k, i) => this.createDie(k, this.shrink[i])); // crée les dés
-    this.applyLayout(); // les range
-    this.restPose(); // les pose au repos
-    this.render(); // dessine
-  }
-
-  // Retire les dés de la scène (les modèles partagés restent).
-  private clearDice(): void {
-    for (const d of this.dice) {
-      this.scene.remove(d.group, d.shadow); // retire de la scène
-      (d.shadow.material as MeshBasicMaterial).dispose(); // libère la matière de l'ombre
-    }
-    this.dice = []; // plus de dés
-  }
-
-  // Range les dés selon la forme de la zone et ajuste la caméra.
-  private applyLayout(): void {
-    const w = Math.max(1, this.host.clientWidth); // largeur de la zone
-    const h = Math.max(1, this.host.clientHeight); // hauteur de la zone
-    const { placements, width, depth } = layoutDice(this.kinds, w / h); // disposition
-    this.largeur = width; // mémorise la largeur occupée (sert à placer le départ des dés hors du cadre)
-    this.dice.forEach((d, i) => d.rest.set(placements[i].x, d.tpl.restY * (d.size / d.tpl.scale), placements[i].z)); // position posée de chaque dé
-    const fov = (this.camera.fov * Math.PI) / 180; // champ de vision en radians
-    const besoin = Math.max((depth + 1) / 2, (width + 1) / (2 * this.camera.aspect)); // demi-taille à faire entrer dans l'image
-    const dist = besoin / Math.tan(fov / 2); // distance de la caméra
-    this.camera.position.set(0, dist, dist * 0.22); // caméra au-dessus, légèrement inclinée vers le joueur
-    this.camera.lookAt(0, 0, 0); // regarde le centre de la table
+  // Mesure l'écran et règle la caméra : vue de dessus, taille des dés à peu près constante en pixels.
+  private measure(): void {
+    const w = Math.max(1, this.canvas.clientWidth); // largeur de l'écran
+    const h = Math.max(1, this.canvas.clientHeight); // hauteur de l'écran
+    this.lastW = w; // mémorise pour repérer un changement de taille
+    this.lastH = h;
+    this.renderer.setSize(w, h, false); // taille du canevas (le CSS gère l'affichage)
+    const unite = borner(Math.min(w, h) / PX_DIVISEUR, PX_MIN, PX_MAX); // pixels par unité de la scène
+    this.halfW = w / 2 / unite; // demi-largeur de la table visible
+    this.halfH = h / 2 / unite; // demi-hauteur de la table visible
+    const dist = this.halfH / Math.tan((CHAMP * Math.PI) / 360); // distance qui fait entrer exactement la hauteur de l'écran
+    this.camera.aspect = w / h; // proportions de la caméra
+    this.camera.position.set(0, dist, 0); // caméra au-dessus du centre
+    this.camera.lookAt(0, 0, 0); // regarde droit vers le bas
     this.camera.updateProjectionMatrix(); // applique
+    this.grossi = dist / (dist - HAUTEUR_DES); // la perspective agrandit ce qui est au-dessus de la table, donc le repousse vers les bords
+    this.walls = { x: Math.max(0.3, this.halfW / this.grossi - MARGE_MUR), top: Math.max(0.3, this.halfH / this.grossi - MARGE_MUR) }; // murs un peu en retrait des bords
   }
 
-  // Pose chaque dé à sa place finale, montrant la face mémorisée.
-  private restPose(): void {
+  // L'écran change de taille (rotation…) : les dés affichés n'auraient plus la bonne place, on les retire.
+  private onResize(): void {
+    if (this.canvas.hidden) return; // rien d'affiché : la prochaine mesure se fera au prochain lancer
+    if (this.canvas.clientWidth === this.lastW && this.canvas.clientHeight === this.lastH) return; // même taille : rien à faire
+    this.finish(true); // termine un éventuel lancer
+    this.dismissNow(); // retire les dés
+  }
+
+  // Prépare la 3D à l'avance (compile les matières) pour éviter un à-coup au premier lancer.
+  warmUp(): void {
+    try {
+      this.measure(); // règle la caméra
+      this.dice = [this.createDie('feat', false), this.createDie('success', false)]; // un dé de chaque type
+      this.renderer.compile(this.scene, this.camera); // compile les matières
+      this.render(); // un premier rendu charge les textures
+    } catch (e) {
+      console.warn('Préchauffage 3D ignoré :', e); // sans gravité
+    } finally {
+      this.clearDice(); // retire les dés de préchauffage
+    }
+  }
+
+  // Lance les dés. Le résultat (spec.faces) est déjà tiré : l'animation y atterrit exactement.
+  roll(spec: RollSpec): void {
+    this.finish(true); // termine un lancer précédent
+    this.dismissNow(); // retire les dés encore affichés
+    this.canvas.hidden = false; // montre le calque plein écran
+    this.measure(); // taille de l'écran et caméra (après l'affichage, pour avoir la vraie taille)
+    this.dice = spec.kinds.map((k, i) => this.createDie(k, spec.reduits[i] === true)); // crée les dés
+    this.shown = spec.kinds.map((_, i) => spec.faces[i] ?? 1); // faces finales
+    const places = scatterDice(spec.kinds, this.halfW / this.grossi - RETRAIT, this.halfH / this.grossi - RETRAIT, Math.random); // où chaque dé se posera
+    const evenements: SoundEvent[] = []; // chocs à jouer
     this.dice.forEach((d, i) => {
-      d.group.position.copy(d.rest); // position posée
-      d.group.quaternion.copy(this.quatFor(d, this.shown[i], 0)); // face voulue vers le haut
-      this.placeShadow(d, d.rest.x, d.rest.z, 0); // ombre sous le dé
+      d.flight = planFlight(places[i], this.walls, this.halfH + 3, Math.random); // trajectoire : arrive du bas, rebondit sur les bords
+      d.startY = d.restY + entre(4, 5.5); // hauteur de départ
+      d.finalQuat.copy(this.quatFor(d, this.shown[i], entre(-0.4, 0.4))); // orientation finale avec un petit lacet
+      d.axis.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(); // axe de roulade aléatoire
+      d.turns = entre(2, 3.5); // entre 2 et 3,5 tours
+      d.delay = i * DECALAGE_MS; // départs échelonnés
+      d.duration = DUREE_MS - 100 + Math.random() * 200; // durées légèrement différentes
+      for (const e of impactEvents(d.flight, this.walls)) evenements.push({ at: (d.delay + e.t * d.duration) / 1000, strength: e.strength, kind: e.kind }); // chocs de ce dé
     });
-  }
-
-  // Place l'ombre sous un dé ; plus le dé est haut, plus l'ombre est large et pâle.
-  private placeShadow(d: DieView, x: number, z: number, hauteur: number): void {
-    d.shadow.position.set(x, 0.02, z); // juste au-dessus de la table
-    const s = d.size * (2.3 + hauteur * 0.5); // largeur de l'ombre
-    d.shadow.scale.set(s, 1, s); // applique
-    (d.shadow.material as MeshBasicMaterial).opacity = 0.55 / (1 + hauteur * 1.2); // pâlit en s'éloignant
-  }
-
-  // Lance l'animation vers les faces données (une par dé, dans l'ordre de setDice). onDone est appelé à l'arrivée.
-  // reduit : dés à réduire (le dé du Destin écarté quand on est favorisé ou défavorisé).
-  roll(faces: FeatFace[], onDone: () => void, reduit: boolean[] = []): void {
-    this.finish(); // termine un lancer précédent
-    this.shown = this.kinds.map((_, i) => faces[i] ?? FACE_REPOS[this.kinds[i]]); // faces finales
-    this.shrink = this.kinds.map((_, i) => reduit[i] === true); // dés à réduire
-    this.dice.forEach((d, i) => {
-      d.size = d.tpl.scale * (this.shrink[i] ? 0.8 : 1); // nouvelle échelle du dé
-      d.group.scale.setScalar(d.size); // applique l'échelle
-      d.rest.y = d.tpl.restY * (d.size / d.tpl.scale); // le dé réduit se pose plus bas
-    });
+    this.onDone = spec.onDone; // mémorise le rappel
     if (this.mouvementReduit.matches) {
-      this.restPose(); // pas d'animation si l'appareil réduit les animations
+      this.dice.forEach((d) => this.pose(d, 1)); // pas d'animation si l'appareil réduit les animations : les dés apparaissent posés
       this.render(); // dessine l'état final
-      onDone(); // prévient immédiatement
+      if (spec.sound) startDiceSound([{ at: 0, strength: 0.5, kind: 'floor' }], 0.2, 1); // un seul « toc »
+      this.endRoll(); // termine tout de suite
       return;
     }
-    this.dice.forEach((d, i) => {
-      d.finalQuat.copy(this.quatFor(d, this.shown[i], (Math.random() - 0.5) * 0.8)); // orientation finale avec un petit lacet
-      d.start.set(d.rest.x - this.largeur / 2 - 4 - Math.random() * 2, 4 + Math.random() * 1.5, d.rest.z + 3 + Math.random() * 2); // départ en haut à gauche, côté joueur
-      d.axis.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(); // axe de roulade aléatoire
-      d.turns = 2 + Math.random() * 1.5; // entre 2 et 3,5 tours
-      d.delay = i * DECALAGE_MS; // départs échelonnés
-      d.duration = DUREE_MS - 80 + Math.random() * 160; // durées légèrement différentes
-    });
+    this.dice.forEach((d) => this.pose(d, 0)); // place les dés au départ avant le premier dessin
+    if (spec.sound) startDiceSound(evenements, (DUREE_MS + 100) / 1000, this.dice.length); // sons du lancer
     this.rolling = true; // lancer en cours
-    this.onDone = onDone; // mémorise le rappel
+    this.canvas.classList.add('rolling'); // le calque capte les appuis (un appui termine le lancer)
     this.t0 = performance.now(); // instant de départ
     this.raf = requestAnimationFrame((t) => this.tick(t)); // lance l'animation
   }
@@ -285,33 +309,63 @@ export class DiceStage {
       this.pose(d, t); // positionne le dé
     }
     this.render(); // dessine
-    if (fini) this.finish(); // tout le monde est arrivé
+    if (fini) this.finish(false); // tout le monde est arrivé : les sons vont jusqu'au bout
     else this.raf = requestAnimationFrame((n) => this.tick(n)); // image suivante
   }
 
   // Positionne un dé à l'avancement t (0 = départ, 1 = arrivé).
   private pose(d: DieView, t: number): void {
-    const e = 1 - Math.pow(1 - t, 3); // ralentit vers la fin
+    const e = easeOut(t); // avancement du trajet (rapide puis lent)
+    const p = flightPosition(d.flight, e, this.walls); // position au sol, repliée sur les murs
     const rebond = Math.abs(Math.sin(t * Math.PI * 2.4)) * Math.pow(1 - t, 1.6) * 1.8; // rebonds qui s'amortissent
-    const x = d.start.x + (d.rest.x - d.start.x) * e; // position horizontale
-    const z = d.start.z + (d.rest.z - d.start.z) * e; // position verticale (profondeur)
-    const y = d.rest.y + rebond + (d.start.y - d.rest.y) * Math.pow(1 - e, 2); // hauteur : chute puis rebonds
-    d.group.position.set(x, y, z); // applique la position
+    const y = d.restY + rebond + (d.startY - d.restY) * Math.pow(1 - e, 2); // hauteur : chute puis rebonds
+    d.group.position.set(p.x, y, p.z); // applique la position
     const spin = new Quaternion().setFromAxisAngle(d.axis, (1 - e) * d.turns * Math.PI * 2); // roulade qui s'arrête
     d.group.quaternion.copy(spin.multiply(d.finalQuat)); // roulade + orientation finale (identiques à t = 1)
-    this.placeShadow(d, x, z, y - d.rest.y); // ombre
+    this.placeShadow(d, p.x, p.z, y - d.restY); // ombre
   }
 
-  // Termine immédiatement le lancer en cours : les dés sautent à leur place finale.
-  finish(): void {
+  // Place l'ombre sous un dé ; plus le dé est haut, plus l'ombre est large et pâle.
+  private placeShadow(d: DieView, x: number, z: number, hauteur: number): void {
+    d.shadow.position.set(x, 0.02, z); // juste au-dessus de la table
+    const s = d.size * (2.3 + hauteur * 0.5); // largeur de l'ombre
+    d.shadow.scale.set(s, 1, s); // applique
+    (d.shadow.material as MeshBasicMaterial).opacity = 0.55 / (1 + hauteur * 1.2); // pâlit en s'éloignant
+  }
+
+  // Termine immédiatement le lancer en cours : les dés sautent à leur place finale. coupeSon = true si l'utilisateur a interrompu.
+  finish(coupeSon: boolean): void {
     if (!this.rolling) return; // rien à terminer
     cancelAnimationFrame(this.raf); // arrête l'animation
     this.rolling = false; // plus de lancer
+    if (coupeSon) stopDiceSound(); // un appui coupe le son (à l'arrivée naturelle, on laisse finir le dernier « toc »)
     for (const d of this.dice) this.pose(d, 1); // tous à l'arrivée
     this.render(); // dessine l'état final
+    this.endRoll(); // prévient et programme l'effacement
+  }
+
+  // Fin d'un lancer : rend les appuis à l'app, prévient l'appelant, programme l'effacement des dés.
+  private endRoll(): void {
+    this.canvas.classList.remove('rolling'); // le calque laisse de nouveau passer les appuis
     const cb = this.onDone; // récupère le rappel
     this.onDone = null; // un seul appel
+    this.holdTimer = window.setTimeout(() => this.fadeOut(), MAINTIEN_MS); // les dés restent visibles un moment
     cb?.(); // prévient l'appelant
+  }
+
+  // Efface les dés en fondu.
+  private fadeOut(): void {
+    this.canvas.classList.add('fading'); // le CSS fait le fondu
+    this.fadeTimer = window.setTimeout(() => this.dismissNow(), FONDU_MS + 50); // puis on retire tout
+  }
+
+  // Retire tout de suite les dés et cache le calque.
+  dismissNow(): void {
+    window.clearTimeout(this.holdTimer); // annule les minuteurs
+    window.clearTimeout(this.fadeTimer);
+    this.clearDice(); // retire les dés
+    this.canvas.classList.remove('fading', 'rolling'); // état de base
+    this.canvas.hidden = true; // cache le calque : plus aucun coût
   }
 
   // Un lancer est-il en cours ?
@@ -319,30 +373,22 @@ export class DiceStage {
     return this.rolling; // état courant
   }
 
-  // Relit les couleurs du CSS (après un changement de teinte) et reconstruit les dés.
+  // Applique de nouvelles couleurs (dés noirs ou blancs) : relit le CSS et reconstruit les modèles.
   refreshColors(): void {
-    this.finish(); // termine un éventuel lancer
+    this.finish(true); // termine un éventuel lancer
+    this.dismissNow(); // retire les dés
     this.disposeTemplates(); // libère les anciens modèles
     this.palette = readPalette(); // nouvelles couleurs
     this.templates = { feat: this.buildTemplate('feat'), success: this.buildTemplate('success') }; // nouveaux modèles
-    const faces = [...this.shown]; // mémorise les faces montrées
-    this.clearDice(); // retire les dés
-    this.dice = this.kinds.map((k, i) => this.createDie(k, this.shrink[i])); // recrée
-    this.shown = faces; // remet les faces
-    this.applyLayout(); // range
-    this.restPose(); // pose
-    this.render(); // dessine
   }
 
-  // Adapte la scène à la taille de la zone.
-  resize(): void {
-    const w = Math.max(1, this.host.clientWidth); // largeur
-    const h = Math.max(1, this.host.clientHeight); // hauteur
-    this.renderer.setSize(w, h, false); // taille du canevas (le CSS gère l'affichage)
-    this.camera.aspect = w / h; // proportions de la caméra
-    this.applyLayout(); // nouvelle disposition
-    if (!this.rolling) this.restPose(); // replace les dés posés
-    this.render(); // dessine
+  // Retire les dés de la scène (les modèles partagés restent).
+  private clearDice(): void {
+    for (const d of this.dice) {
+      this.scene.remove(d.group, d.shadow); // retire de la scène
+      (d.shadow.material as MeshBasicMaterial).dispose(); // libère la matière de l'ombre
+    }
+    this.dice = []; // plus de dés
   }
 
   // Dessine la scène.
@@ -367,6 +413,9 @@ export class DiceStage {
   // Libère tout (si l'écran est détruit).
   dispose(): void {
     cancelAnimationFrame(this.raf); // stoppe l'animation
+    window.clearTimeout(this.holdTimer); // annule les minuteurs
+    window.clearTimeout(this.fadeTimer);
+    stopDiceSound(); // coupe le son
     this.observer.disconnect(); // stoppe la surveillance de taille
     this.clearDice(); // retire les dés
     this.disposeTemplates(); // libère les modèles

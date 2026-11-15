@@ -29,6 +29,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.2.0 | Dés plein écran (arrivée par le bas, rebonds sur les bords, effacement en fondu après 3 s) ; dés noirs ou blancs aux chiffres rouges, plus gros ; bruit des dés (roulement et chocs), les deux réglages dans le menu ⚙ |
 | 0.1.0 | Squelette PWA (tiroir, bouton Retour, dernier écran, aide « i », installation, hors ligne) ; lanceur de dés 3D de L'Anneau Unique (dé du Destin d12 + dés de Maîtrise d6), historique des jets |
 
 ## Droits par rôle
@@ -57,12 +58,19 @@ Le vocabulaire français (Dé du Destin, Dés de Maîtrise, Épuisé, Mélancoli
 
 ## Principe des dés 3D
 
-Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**animer** (~1 s) un lancer qui se termine exactement sur les faces tirées. Un toucher interrompt l'animation ; elle est coupée si l'appareil réduit les animations.
+Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**animer** (~1,1 s) un lancer qui se termine exactement sur les faces tirées.
+
+- **Plein écran** : un calque `<canvas id="dice-canvas">` couvre tout l'écran, transparent. Il capte les appuis seulement pendant le lancer (un appui arrête les dés) ; ensuite les appuis passent à travers. Les dés restent 3 s puis s'effacent en fondu.
+- **Trajectoire** (`src/dice3d/trajectory.ts`) : chaque dé arrive du bas, file vers une cible parfois « repliée » derrière un mur, rebondit, puis se pose à sa place (`layout.ts`, répartition sans chevauchement).
+- **Couleurs** : `--die-body`, `--die-ink`, `--die-edge` dans `tokens.css` ; l'attribut `data-dice` (`black` / `white`) sur `<html>` choisit le jeu de couleurs.
+- **Son** (`src/audio/diceSound.ts`) : fabriqué par l'appareil (Web Audio), aucun fichier. Un « toc » par rebond et par choc, programmé d'après la trajectoire.
+- Animation coupée si l'appareil réduit les animations (les dés apparaissent posés, un seul « toc »).
 
 ## Dépannage
 
 - Écran d'erreur au démarrage : bouton « Réinitialiser et recharger ».
 - Pas de dés visibles : l'appareil n'a pas WebGL, un message l'indique, le jet marche quand même.
+- Pas de son : vérifie « Son des dés » dans le menu ⚙ (et le volume « média » du téléphone, pas la sonnerie).
 - Nouvelle version non visible : menu ⚙ → recharger, ou fermer et rouvrir l'app.
 
 ## Feuille de route

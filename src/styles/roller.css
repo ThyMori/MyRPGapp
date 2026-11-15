@@ -1,41 +1,38 @@
 /* Écran « Lanceur de dés » : table 3D, résultat, réglages, historique, barre d'action. */
 
-/* Table de dés : zone à hauteur adaptée, fond en creux avec un léger halo. */
-.stage {
-  position: relative;
-  flex: 0 0 clamp(180px, 34dvh, 400px);
-  background: radial-gradient(ellipse at 50% 40%, var(--bg-raised), var(--bg-sunken) 75%);
-  border-bottom: 1px solid var(--line);
-  cursor: pointer;
-  touch-action: manipulation;
-  overflow: hidden;
-}
-.stage canvas {
-  position: absolute;
+/* Calque plein écran des dés 3D : par-dessus toute l'app, transparent. Il ne gêne pas les appuis, sauf pendant le lancer
+   (un appui sur n'importe quel point de l'écran arrête alors les dés). */
+.dice-overlay {
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  display: block;
-}
-.stage-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 8px;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--text-dim);
+  z-index: 50; /* au-dessus du tiroir et des menus, sous le message (toast) */
   pointer-events: none;
+  touch-action: manipulation;
+  opacity: 1;
+  transition: opacity 0.6s ease; /* fondu de fin */
 }
-.stage-fallback {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  text-align: center;
+.dice-overlay.rolling {
+  pointer-events: auto;
+}
+.dice-overlay.fading {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dice-overlay {
+    transition: none; /* pas de fondu si l'appareil réduit les animations */
+  }
+}
+
+/* Remarque affichée en haut de l'écran (ex. : 3D indisponible). */
+.note {
+  margin: 0;
+  padding: 10px 14px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
   color: var(--text-dim);
+  font-size: 0.9rem;
 }
 
 /* Zone qui défile : résultat, réglages, historique. */

@@ -27,26 +27,18 @@ export function readThreeColor(name: string): Color {
   return new Color().setRGB(r / 255, g / 255, b / 255, 'srgb'); // couleur dans l'espace sRGB
 }
 
-// Palette complète des dés, lue au moment de l'appel (elle change si la teinte du jeu change).
+// Palette des dés, lue au moment de l'appel (elle change quand l'utilisateur passe des dés noirs aux dés blancs).
 export interface DicePalette {
-  featBody: Color; // corps du dé du Destin
-  featInk: string; // chiffres du dé du Destin
-  featEye: string; // œil de Sauron
-  succBody: Color; // corps d'un dé de Maîtrise
-  succInk: string; // chiffres d'un dé de Maîtrise
-  succRune: string; // rune d'un dé de Maîtrise
+  body: Color; // corps des dés (noir ou blanc)
+  ink: string; // chiffres et symboles (rouge)
   edge: Color; // arêtes
 }
 
 // Lit toute la palette.
 export function readPalette(): DicePalette {
   return {
-    featBody: readThreeColor('--die-feat-body'), // corps du dé du Destin
-    featInk: readCss('--die-feat-ink'), // chiffres du dé du Destin
-    featEye: readCss('--die-feat-eye'), // œil
-    succBody: readThreeColor('--die-succ-body'), // corps des dés de Maîtrise
-    succInk: readCss('--die-succ-ink'), // chiffres des dés de Maîtrise
-    succRune: readCss('--die-succ-rune'), // rune des dés de Maîtrise
-    edge: readThreeColor('--die-edge'), // arêtes
+    body: readThreeColor('--die-body'), // corps des dés
+    ink: readCss('--die-ink'), // chiffres et symboles
+    edge: readThreeColor('--die-edge'), // arêtes des dés
   };
 }
