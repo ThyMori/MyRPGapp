@@ -1,0 +1,148 @@
+/* Base : remise à zéro, texte, boutons, champs, focus visible, animations réduites. */
+
+/* Le calcul des tailles inclut toujours les marges et bordures. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Taille de base : 14 px sur téléphone (plus compact), 16 px sur grand écran. */
+html {
+  font-size: 14px;
+  height: 100%;
+  -webkit-text-size-adjust: 100%; /* empêche le téléphone de regonfler le texte */
+}
+@media (min-width: 700px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+/* Page : fond sombre, texte clair, pas de rebond au bord de l'écran. */
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.45;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent; /* pas de halo gris au toucher */
+}
+
+/* Titres en serif. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.15;
+}
+
+p {
+  margin: 0;
+}
+
+/* Un élément avec l'attribut hidden doit vraiment disparaître, quel que soit son style. */
+[hidden] {
+  display: none !important;
+}
+
+/* Boutons : zone tactile d'au moins 44 px, police de la page. */
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation; /* supprime le délai du double-toucher */
+}
+
+/* Bouton-icône carré. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  border-radius: var(--radius);
+  color: var(--text);
+}
+.icon-btn:hover {
+  background: var(--bg-hover);
+}
+.icon-btn svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Bouton principal (accent) et secondaire (contour). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 0 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+  font-weight: 600;
+}
+.btn:hover {
+  background: var(--bg-hover);
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-primary:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+/* Champs : police 16 px minimum, sinon iOS zoome à la saisie. */
+input,
+select,
+textarea {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+}
+
+/* Contour net quand on navigue au clavier (absent des anciennes apps : accessibilité de base). */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Si l'appareil demande de réduire les animations, on les coupe presque entièrement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Texte réservé aux lecteurs d'écran. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

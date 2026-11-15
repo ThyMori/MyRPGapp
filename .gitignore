@@ -1,0 +1,15 @@
+# Dépendances installées par npm (se recréent avec "npm install")
+node_modules/
+# Dossier produit par le build (se recrée avec "npm run build")
+dist/
+# Fichiers locaux de réglage
+*.local
+.env
+.env.*
+# Données personnelles : exports de fiches, seeds, sauvegardes (jamais dans le dépôt)
+data-privee/
+exports/
+*.export.json
+# Fichiers du système
+.DS_Store
+Thumbs.db

@@ -1,0 +1,51 @@
+/* Variables de couleur, de police et de taille. TOUTES les couleurs de l'app sont définies ici, nulle part ailleurs. */
+:root {
+  /* Teinte du jeu (0 à 360). Elle colore toute l'interface ; chaque jeu aura la sienne. L'Anneau Unique : or patiné. */
+  --h: 38;
+
+  /* Fonds, du plus sombre au plus clair. */
+  --bg: hsl(var(--h) 16% 8%); /* fond de l'app */
+  --bg-raised: hsl(var(--h) 14% 12%); /* panneaux, tiroir, en-tête */
+  --bg-sunken: hsl(var(--h) 18% 6%); /* zones en creux (champs, table de dés) */
+  --bg-hover: hsl(var(--h) 14% 17%); /* survol / appui */
+  --shade: hsl(var(--h) 20% 3% / 0.6); /* voile derrière les fenêtres et le tiroir */
+  --line: hsl(var(--h) 14% 22%); /* traits de séparation */
+
+  /* Textes. */
+  --text: hsl(var(--h) 22% 90%); /* texte principal */
+  --text-dim: hsl(var(--h) 10% 68%); /* texte secondaire */
+
+  /* Accent de la teinte du jeu. */
+  --accent: hsl(var(--h) 52% 60%); /* boutons, sélection */
+  --accent-strong: hsl(var(--h) 62% 70%); /* titres, survol */
+  --accent-ink: hsl(var(--h) 40% 10%); /* texte posé sur l'accent */
+  --focus: hsl(var(--h) 90% 72%); /* contour de focus au clavier */
+
+  /* Couleurs d'état : constantes dans toute l'app, indépendantes de la teinte. */
+  --ok: hsl(142 40% 55%); /* réussite */
+  --warn: hsl(44 85% 60%); /* avertissement, rappel */
+  --bad: hsl(2 66% 62%); /* échec, erreur */
+
+  /* Couleurs des dés 3D (lues par src/dice3d/colors.ts). */
+  --die-feat-body: hsl(var(--h) 14% 17%); /* corps du dé du Destin : pierre sombre */
+  --die-feat-ink: hsl(var(--h) 62% 70%); /* chiffres et rune de Gandalf : or clair */
+  --die-feat-eye: hsl(6 80% 58%); /* œil de Sauron : braise */
+  --die-succ-body: hsl(var(--h) 32% 84%); /* dés de Maîtrise : ivoire */
+  --die-succ-ink: hsl(var(--h) 28% 14%); /* chiffres des dés de Maîtrise */
+  --die-succ-rune: hsl(var(--h) 60% 30%); /* rune des dés de Maîtrise */
+  --die-edge: hsl(var(--h) 34% 42%); /* arêtes des dés */
+
+  /* Polices (hébergées dans l'app, importées dans src/main.ts). */
+  --font-title: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; /* titres */
+  --font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif; /* texte courant */
+
+  /* Tailles. */
+  --tap: 44px; /* taille minimale d'une zone tactile */
+  --radius: 12px; /* arrondi courant */
+
+  /* Marges de sécurité (encoches, barre du bas des téléphones). */
+  --safe-top: env(safe-area-inset-top, 0px); /* haut */
+  --safe-bottom: env(safe-area-inset-bottom, 0px); /* bas */
+  --safe-left: env(safe-area-inset-left, 0px); /* gauche */
+  --safe-right: env(safe-area-inset-right, 0px); /* droite */
+}

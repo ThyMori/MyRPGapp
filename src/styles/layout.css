@@ -1,0 +1,418 @@
+/* Structure générale : tiroir latéral, en-tête, zone d'écran. Pensée pour le téléphone d'abord. */
+
+/* L'app occupe tout l'écran. 100vh sert de repli, 100dvh (hauteur réelle visible) prend le relais. */
+.app {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Tiroir latéral : caché à gauche, il glisse par-dessus le contenu. */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: min(88vw, 340px);
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  background: var(--bg-raised);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  z-index: 30;
+  padding: var(--safe-top) 0 var(--safe-bottom) var(--safe-left);
+}
+body.drawer-open .sidebar {
+  transform: none;
+}
+
+/* Voile sombre derrière le tiroir : toucher le voile ferme le tiroir. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--shade);
+  z-index: 20;
+}
+
+/* En-tête du tiroir : nom de l'app. */
+.sidebar-head {
+  padding: 18px 18px 10px;
+}
+.brand {
+  font-size: 1.7rem;
+  color: var(--accent-strong);
+  letter-spacing: 0.01em;
+}
+.brand-sub {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin-top: 2px;
+}
+
+/* Navigation du tiroir. */
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 10px;
+}
+.nav-section {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding: 10px 10px 6px;
+}
+.nav-game {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 10px;
+  font-family: var(--font-title);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent-strong);
+  text-align: left;
+}
+.nav-game::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent); /* pastille à la couleur du jeu */
+}
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 14px;
+}
+.nav-item {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-radius: var(--radius);
+  text-align: left;
+  color: var(--text);
+}
+.nav-item:hover {
+  background: var(--bg-hover);
+}
+.nav-item[aria-current='page'] {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+/* Pied du tiroir : roue crantée et version, toujours visibles. */
+.sidebar-foot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--line);
+}
+.version {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+/* Zone principale : en-tête puis écran. */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-right: var(--safe-right);
+}
+
+/* En-tête de l'écran. */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: calc(52px + var(--safe-top));
+  padding: var(--safe-top) 6px 0 calc(6px + var(--safe-left));
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+}
+.head-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Zone qui contient les écrans. */
+.screen-host {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* État vide d'un écran : texte centré qui dit quoi faire. */
+.empty-state {
+  margin: auto;
+  max-width: 28rem;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.empty-state h3 {
+  color: var(--text);
+  font-size: 1.5rem;
+  margin-bottom: 8px;
+}
+
+/* Grand écran : le tiroir devient une colonne fixe et les boutons de navigation disparaissent. */
+@media (min-width: 900px) {
+  .sidebar {
+    position: static;
+    transform: none;
+    transition: none;
+    width: 280px;
+    flex: none;
+    padding-top: 0;
+  }
+  .backdrop {
+    display: none !important;
+  }
+  #btn-drawer {
+    display: none;
+  }
+  .main {
+    padding-left: 0;
+  }
+  .head {
+    padding-left: 14px;
+  }
+}
+
+/* Menus déroulants (⋮ en haut, roue crantée en bas). */
+.menu {
+  position: absolute;
+  z-index: 40;
+  min-width: 15rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px var(--shade);
+  padding: 6px;
+}
+.menu-up {
+  bottom: calc(100% - 6px);
+  left: 10px;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-radius: 8px;
+  text-align: left;
+}
+.menu-item:hover {
+  background: var(--bg-hover);
+}
+
+/* Menu ⋮ de l'en-tête : les boutons d'action deviennent une liste avec libellés sur téléphone. */
+.head-more {
+  position: relative;
+}
+.head-tools {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 40;
+  min-width: 15rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px var(--shade);
+  padding: 6px;
+  flex-direction: column;
+  display: none;
+}
+.head-tools.open {
+  display: flex;
+}
+/* Le libellé vient de aria-label : une seule source pour l'accessibilité et pour l'affichage. */
+.head-tools .icon-btn {
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 0 12px;
+}
+.head-tools .icon-btn::after {
+  content: attr(aria-label);
+}
+
+/* Écran large : les actions s'affichent directement en petites icônes, le menu ⋮ disparaît. */
+@media (min-width: 700px) {
+  #btn-more {
+    display: none;
+  }
+  .head-tools {
+    position: static;
+    display: flex;
+    flex-direction: row;
+    min-width: 0;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+  .head-tools .icon-btn {
+    width: auto;
+    padding: 0;
+    justify-content: center;
+  }
+  .head-tools .icon-btn::after {
+    content: none;
+  }
+}
+
+/* Fenêtres de dialogue natives. */
+dialog {
+  width: min(94vw, 34rem);
+  max-height: 90vh;
+  max-height: 90dvh;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--bg-raised);
+  color: var(--text);
+  overflow: hidden;
+}
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+dialog::backdrop {
+  background: var(--shade);
+}
+.dialog-body {
+  padding: 18px 20px 8px;
+  overflow-y: auto;
+}
+.dialog-body h2 {
+  font-size: 1.7rem;
+  color: var(--accent-strong);
+  margin-bottom: 12px;
+}
+.dialog-body h2:focus {
+  outline: none; /* le titre reçoit le focus sans cadre : il sert seulement à ne pas ouvrir de clavier */
+}
+.dialog-body h3 {
+  font-size: 1.2rem;
+  margin: 16px 0 4px;
+}
+.dialog-body p,
+.dialog-body li {
+  color: var(--text);
+  margin: 0 0 6px;
+}
+.dialog-body ol {
+  padding-left: 1.3rem;
+  margin: 6px 0;
+}
+.dialog-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px calc(14px + var(--safe-bottom));
+  border-top: 1px solid var(--line);
+}
+
+/* Message unique en bas de l'écran (toast). */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(86px + var(--safe-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  width: max-content; /* sinon le message se réduit à la moitié de l'écran à cause de left: 50% */
+  max-width: min(92vw, 30rem);
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 10px 30px var(--shade);
+}
+.toast.ok {
+  border-left-color: var(--ok);
+}
+.toast.error {
+  border-left-color: var(--bad);
+}
+
+/* Bandeau d'installation (reportable). */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 14px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+  border-left: 4px solid var(--warn);
+}
+.banner p {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+.banner-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+.banner .btn {
+  padding: 0 12px;
+}
+
+/* Écran d'erreur de démarrage. */
+.boot-error {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: var(--bg);
+}
+.boot-error h2 {
+  color: var(--bad);
+  font-size: 1.8rem;
+}
+.boot-error pre {
+  max-width: 100%;
+  max-height: 30vh;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  background: var(--bg-sunken);
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: pre-wrap;
+}

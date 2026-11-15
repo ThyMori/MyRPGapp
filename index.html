@@ -1,0 +1,242 @@
+<!doctype html>
+<!-- Page unique de l'application. La structure est écrite ici ; le comportement est dans src/. -->
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover : l'app occupe tout l'écran, y compris autour des encoches -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Couleur de la barre du navigateur (mise à jour par le code selon la teinte du jeu) -->
+    <meta name="theme-color" content="#14110d" />
+    <title>MyRPGapp</title>
+    <meta name="description" content="Dés en 3D, fiches de personnages et oracles pour jeux de rôle." />
+    <!-- Icônes en PNG et ICO (Firefox Android n'affiche pas bien les SVG seuls) -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <!-- Filet de sécurité : si l'app n'a pas démarré après 8 secondes, on affiche l'erreur et un bouton de réinitialisation.
+         Ce script est volontairement écrit à part et très simple, pour fonctionner même si le reste de l'app est cassé. -->
+    <script>
+      (function () {
+        var derniereErreur = ''; // dernière erreur vue avant le démarrage
+        function afficher() {
+          var boite = document.getElementById('boot-error'); // écran d'erreur
+          var detail = document.getElementById('boot-error-detail'); // zone de détail
+          if (detail) detail.textContent = derniereErreur || 'Aucune erreur précise : le démarrage est trop long.'; // texte (jamais de HTML)
+          if (boite) boite.hidden = false; // montre l'écran d'erreur
+        }
+        window.addEventListener('error', function (e) { derniereErreur = (e && e.message) || String(e); }); // retient les erreurs de script
+        window.addEventListener('unhandledrejection', function (e) { derniereErreur = String(e && e.reason); }); // retient les erreurs asynchrones
+        var minuteur = setTimeout(afficher, 8000); // 8 secondes pour démarrer
+        window.__bootOk = function () { clearTimeout(minuteur); }; // appelé par l'app quand tout est prêt
+        window.__bootFail = function (err) { clearTimeout(minuteur); derniereErreur = (err && (err.stack || err.message)) || String(err); afficher(); }; // appelé si le démarrage échoue
+        // Supprime le service worker et les caches, puis recharge. La session et les données (stockage local) sont gardées.
+        window.__resetApp = function () {
+          var taches = []; // opérations à attendre
+          if (navigator.serviceWorker) taches.push(navigator.serviceWorker.getRegistrations().then(function (regs) { return Promise.all(regs.map(function (r) { return r.unregister(); })); })); // désinscrit les service workers
+          if (window.caches) taches.push(caches.keys().then(function (noms) { return Promise.all(noms.map(function (n) { return caches.delete(n); })); })); // vide les caches
+          return Promise.all(taches).then(function () { location.reload(); }, function () { location.reload(); }); // recharge dans tous les cas
+        };
+      })();
+    </script>
+  </head>
+
+  <body>
+    <!-- Écran d'erreur de démarrage (caché tant que tout va bien) -->
+    <div class="boot-error" id="boot-error" hidden>
+      <h2>L'app n'a pas pu démarrer</h2>
+      <p>Une réinitialisation règle presque toujours le problème. Tes fiches et tes réglages sont conservés.</p>
+      <pre id="boot-error-detail"></pre>
+      <button class="btn btn-primary" type="button" onclick="window.__resetApp()">Réinitialiser et recharger</button>
+    </div>
+
+    <div class="app" id="app">
+      <!-- Voile derrière le tiroir (téléphone) -->
+      <div class="backdrop" id="backdrop" hidden></div>
+
+      <!-- Tiroir latéral : navigation, réglages rares, version -->
+      <aside class="sidebar" id="sidebar" aria-label="Navigation">
+        <div class="sidebar-head">
+          <h1 class="brand">MyRPGapp</h1>
+          <p class="brand-sub">Jeux de rôle</p>
+        </div>
+        <nav class="nav" id="nav">
+          <p class="nav-section">Jeux</p>
+          <!-- Un jeu : sa couleur est la teinte de toute l'interface -->
+          <p class="nav-game" data-game="tor">L'Anneau Unique</p>
+          <ul class="nav-list">
+            <li><button class="nav-item" type="button" data-screen="roller">Lanceur de dés</button></li>
+            <li><button class="nav-item" type="button" data-screen="characters">Personnages</button></li>
+            <li><button class="nav-item" type="button" data-screen="oracles">Oracles</button></li>
+          </ul>
+        </nav>
+        <!-- Pied du tiroir : toujours visible -->
+        <div class="sidebar-foot">
+          <button class="icon-btn" id="btn-settings" type="button" aria-label="Réglages" aria-haspopup="menu" aria-expanded="false" aria-controls="menu-settings">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" /><circle cx="12" cy="12" r="6.8" /><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" /></svg>
+          </button>
+          <!-- Menu des réglages rares : s'ouvre vers le haut -->
+          <div class="menu menu-up" id="menu-settings" role="menu" hidden>
+            <button class="menu-item" type="button" role="menuitem" id="mi-install">Installer l'app</button>
+            <button class="menu-item" type="button" role="menuitem" id="mi-update">Chercher une mise à jour</button>
+            <button class="menu-item" type="button" role="menuitem" id="mi-reset">Réinitialiser et recharger</button>
+          </div>
+          <span class="version" id="version"></span>
+        </div>
+      </aside>
+
+      <!-- Zone principale -->
+      <div class="main">
+        <header class="head">
+          <button class="icon-btn" id="btn-drawer" type="button" aria-label="Ouvrir le menu" aria-controls="sidebar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <h2 class="head-title" id="head-title" tabindex="-1">Lanceur de dés</h2>
+          <!-- Sur téléphone, les actions passent dans le menu ⋮ avec leur libellé ; sur grand écran, ce sont des icônes -->
+          <div class="head-more">
+            <button class="icon-btn" id="btn-more" type="button" aria-label="Plus d'actions" aria-haspopup="menu" aria-expanded="false" aria-controls="head-tools">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="12" cy="19" r="1.3" /></svg>
+            </button>
+            <div class="head-tools" id="head-tools" role="menu">
+              <button class="icon-btn" id="btn-clear" type="button" role="menuitem" aria-label="Effacer l'historique" data-screens="roller">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+              </button>
+              <button class="icon-btn" id="btn-help" type="button" role="menuitem" aria-label="Aide">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v6" /><circle cx="12" cy="7.6" r="0.7" /></svg>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- Bandeau d'installation : reportable une semaine, trois fois au plus -->
+        <div class="banner" id="install-banner" hidden>
+          <p>Installe l'app : plein écran, même sans réseau.</p>
+          <div class="banner-actions">
+            <button class="btn btn-primary" type="button" id="banner-how">Installer</button>
+            <button class="btn" type="button" id="banner-later">Plus tard</button>
+          </div>
+        </div>
+
+        <main class="screen-host" id="screen-host">
+          <!-- ÉCRAN : Lanceur de dés -->
+          <section class="screen" id="screen-roller" data-screen="roller" aria-label="Lanceur de dés">
+            <!-- Table de dés : un appui lance, un appui pendant le lancer le termine -->
+            <div class="stage" id="stage" role="button" tabindex="0" aria-label="Lancer les dés">
+              <canvas id="dice-canvas" aria-hidden="true"></canvas>
+              <p class="stage-hint" id="stage-hint">Touche les dés pour lancer</p>
+              <p class="stage-fallback" id="stage-fallback" hidden>Ton appareil n'affiche pas les dés en 3D. Les jets fonctionnent quand même : le résultat s'affiche juste en dessous.</p>
+            </div>
+
+            <div class="roller-scroll">
+              <!-- Résultat du dernier jet -->
+              <div class="result" id="result" aria-live="polite">
+                <p class="result-empty">Aucun jet pour l'instant. Touche les dés ou « Lancer » !</p>
+              </div>
+
+              <!-- Réglages du jet -->
+              <div class="controls" id="controls" role="group" aria-label="Réglages du jet">
+                <div class="row">
+                  <div class="row-label">Dés de Maîtrise<small>Le rang de la compétence</small></div>
+                  <div class="stepper" role="group" aria-label="Nombre de dés de Maîtrise">
+                    <button type="button" data-step="pool" data-dir="-1" aria-label="Un dé de Maîtrise de moins">−</button>
+                    <output id="out-pool">3</output>
+                    <button type="button" data-step="pool" data-dir="1" aria-label="Un dé de Maîtrise de plus">+</button>
+                  </div>
+                </div>
+                <fieldset class="seg-wrap">
+                  <legend class="row-label">Dé du Destin</legend>
+                  <div class="seg">
+                    <label class="seg-item"><input type="radio" name="mode" value="illfavoured" /><span>Défavorisé</span></label>
+                    <label class="seg-item"><input type="radio" name="mode" value="normal" checked /><span>Normal</span></label>
+                    <label class="seg-item"><input type="radio" name="mode" value="favoured" /><span>Favorisé</span></label>
+                  </div>
+                </fieldset>
+                <div class="toggles">
+                  <label class="toggle"><input type="checkbox" id="chk-weary" /><span>Épuisé</span></label>
+                  <label class="toggle"><input type="checkbox" id="chk-miserable" /><span>Mélancolique</span></label>
+                </div>
+                <div class="row">
+                  <div class="row-label">SR<small>Seuil de réussite à atteindre</small></div>
+                  <div class="stepper" role="group" aria-label="Seuil de réussite">
+                    <button type="button" data-step="tn" data-dir="-1" aria-label="Seuil de réussite plus bas">−</button>
+                    <output id="out-tn">14</output>
+                    <button type="button" data-step="tn" data-dir="1" aria-label="Seuil de réussite plus haut">+</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Historique -->
+              <h3 class="history-title">Derniers jets</h3>
+              <ol class="history" id="history-list"></ol>
+              <p class="empty" id="history-empty">Tes jets apparaîtront ici, du plus récent au plus ancien.</p>
+            </div>
+
+            <!-- Barre d'action : toujours à portée du pouce -->
+            <div class="actionbar">
+              <button class="btn btn-primary" id="btn-roll" type="button">Lancer</button>
+            </div>
+          </section>
+
+          <!-- ÉCRAN : Personnages (à venir) -->
+          <section class="screen" id="screen-characters" data-screen="characters" aria-label="Personnages" hidden>
+            <div class="empty-state">
+              <h3>Personnages</h3>
+              <p>Les fiches de personnages arrivent à une prochaine étape. Tu pourras les créer ici et les partager avec ton cercle.</p>
+              <p style="margin-top: 14px"><button class="btn" type="button" data-goto="roller">Retour au lanceur</button></p>
+            </div>
+          </section>
+
+          <!-- ÉCRAN : Oracles (à venir) -->
+          <section class="screen" id="screen-oracles" data-screen="oracles" aria-label="Oracles" hidden>
+            <div class="empty-state">
+              <h3>Oracles</h3>
+              <p>Les oracles, avec leur lancer de dés intégré, arrivent à une prochaine étape.</p>
+              <p style="margin-top: 14px"><button class="btn" type="button" data-goto="roller">Retour au lanceur</button></p>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- Message unique en bas de l'écran -->
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <!-- Fenêtre : Aide (bouton « i ») -->
+    <dialog id="dialog-help" aria-labelledby="help-title">
+      <div class="dialog-body">
+        <h2 id="help-title" tabindex="-1">Aide</h2>
+        <h3>1. Lancer les dés</h3>
+        <p>Touche la table de dés ou le bouton <strong>Lancer</strong>. Le tirage est fait par l'appareil, puis les dés roulent environ une seconde. Touche pendant qu'ils roulent pour les faire s'arrêter tout de suite.</p>
+        <h3>2. Régler le jet</h3>
+        <p><strong>Dés de Maîtrise</strong> : le nombre de dés, avec − et +. <strong>Dé du Destin</strong> : <strong>Normal</strong> (un dé), <strong>Favorisé</strong> (deux dés, on garde le meilleur) ou <strong>Défavorisé</strong> (deux dés, on garde le pire).</p>
+        <p><strong>Épuisé</strong> et <strong>Mélancolique</strong> : cochés, ils appliquent leurs effets au résultat. <strong>SR</strong> : le seuil de réussite à atteindre.</p>
+        <h3>3. Lire le résultat</h3>
+        <p>La carte du haut donne le niveau (<strong>Échec</strong>, <strong>Réussite</strong>, <strong>Grande réussite</strong> ou <strong>Réussite extraordinaire</strong>), le total et le détail de chaque dé. Les dés ignorés à cause de l'état <strong>Épuisé</strong> sont barrés.</p>
+        <h3>4. Historique</h3>
+        <p>Touche un jet de la liste pour <strong>Reprendre ces réglages</strong> ou le <strong>Retirer</strong>. <strong>Effacer l'historique</strong> se trouve dans le menu ⋮ (ou l'icône poubelle sur grand écran).</p>
+        <h3>5. Se déplacer</h3>
+        <p>Le bouton ☰ ouvre le menu, comme un glissement du doigt vers la droite. Le bouton <strong>Retour</strong> du téléphone ferme d'abord ce qui est ouvert, puis revient au lanceur ; il faut appuyer deux fois pour quitter l'app.</p>
+        <h3>6. Installer et dépanner</h3>
+        <p>La roue crantée du menu propose <strong>Installer l'app</strong>, <strong>Chercher une mise à jour</strong> et <strong>Réinitialiser et recharger</strong> si quelque chose se bloque. Tes jets et tes réglages sont gardés sur cet appareil.</p>
+      </div>
+      <div class="dialog-foot"><button class="btn btn-primary" type="button" data-close>Fermer</button></div>
+    </dialog>
+
+    <!-- Fenêtre : guide d'installation (adapté à l'appareil par le code) -->
+    <dialog id="dialog-install" aria-labelledby="install-title">
+      <div class="dialog-body">
+        <h2 id="install-title" tabindex="-1">Installer l'app</h2>
+        <p id="install-intro"></p>
+        <ol id="install-steps"></ol>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn-primary" type="button" id="install-now" hidden>Installer maintenant</button>
+        <button class="btn" type="button" data-close>Fermer</button>
+      </div>
+    </dialog>
+
+    <!-- Point d'entrée du code -->
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
