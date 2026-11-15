@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.2.4 — 2026-11-15
+- Nettoyage après l'essai d'hébergement : suppression de wrangler.jsonc et de public/CNAME
+
 ## 0.2.3 — 2026-11-15
 - Netlify devient l'hébergement officiel : tests avant publication, arrêt de GitHub Pages
 

@@ -18,7 +18,7 @@ TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hé
 Dé du Destin, Dés de Maîtrise, Épuisé, Mélancolique, Œil de Sauron, Rune de Gandalf, Favorisé / Défavorisé, SR (seuil de réussite). À confirmer avec le livre.
 
 ## Versions
-x.y.z, incrémenté à chaque livraison avec `node scripts/bump-version.mjs patch|minor|major "notes"` (jamais à la main). `--check` avant le commit. Le workflow le vérifie aussi.
+x.y.z, incrémenté à chaque livraison avec `node scripts/bump-version.mjs patch|minor|major "notes"` (jamais à la main). `--check` avant le commit. La commande de build de Netlify le vérifie aussi.
 
 ## Ergonomie (référence ThyChat)
 Tiroir latéral, bouton Retour géré, dernier écran rouvert, menu ⋮ sur téléphone, dialogues natifs, un seul message (toast), aide « i » à jour à chaque fonction, filet de démarrage 8 s.

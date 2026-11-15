@@ -29,14 +29,15 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 ### Historique des essais d'hébergement
 
-- **GitHub Pages** (jusqu'à 0.2.2) : abandonné, ses conditions excluent l'usage commercial. Pour y revenir : recréer un workflow de publication, CNAME vers `thymori.github.io`, Settings → Pages. Le fichier `public/CNAME` ne sert plus, il est inoffensif.
-- **Cloudflare** (essai 0.2.1) : la publication marche (`wrangler.jsonc` publie `dist`, son `name` doit rester identique au projet), mais le domaine ne peut pas y être relié sans déplacer tout `thierry-morin.com` chez Cloudflare (message « No zones match »). Non retenu pour l'instant ; `wrangler.jsonc` est à supprimer avec le projet Cloudflare.
+- **GitHub Pages** (jusqu'à 0.2.2) : abandonné, ses conditions excluent l'usage commercial. Pour y revenir : recréer un workflow de publication, CNAME vers `thymori.github.io`, Settings → Pages. Le fichier `public/CNAME` a été supprimé en 0.2.4.
+- **Cloudflare** (essai 0.2.1) : la publication marche (`wrangler.jsonc` publie `dist`, son `name` doit rester identique au projet), mais le domaine ne peut pas y être relié sans déplacer tout `thierry-morin.com` chez Cloudflare (message « No zones match »). Non retenu : le projet Cloudflare et `wrangler.jsonc` ont été supprimés en 0.2.4.
 - **Netlify** (essai 0.2.2) : retenu, un simple CNAME chez Squarespace suffit. Offre gratuite à quota mensuel de crédits : vérifier la page de tarifs avant tout usage pro.
 
 ## Fonctions livrées
 
 | Version | Fonction |
 |---|---|
+| 0.2.4 | Nettoyage après l'essai : suppression de `wrangler.jsonc` et de `public/CNAME` ; aucun changement dans l'app |
 | 0.2.3 | Netlify devient l'hébergement officiel ; tests et contrôle de version avant chaque publication ; arrêt de la publication GitHub Pages ; aucun changement dans l'app |
 | 0.2.2 | Essai de publication sur Netlify (ajout de `netlify.toml`) ; aucun changement dans l'app |
 | 0.2.1 | Réparation de la publication Cloudflare (ajout de `wrangler.jsonc`) ; aucun changement dans l'app |
@@ -83,7 +84,6 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 - Pas de dés visibles : l'appareil n'a pas WebGL, un message l'indique, le jet marche quand même.
 - Pas de son : vérifie « Son des dés » dans le menu ⚙ (et le volume « média » du téléphone, pas la sonnerie).
 - Nouvelle version non visible : menu ⚙ → recharger, ou fermer et rouvrir l'app.
-- Cloudflare : l'étape « Deploying » échoue avec « Missing entry-point » : `wrangler.jsonc` manque ou son `assets.directory` ne pointe pas sur `./dist`.
 
 ## Feuille de route
 
