@@ -16,38 +16,28 @@ npm test           # lance les tests
 npm run build      # contrôle de types + construction dans dist/
 ```
 
-## Mise en ligne (à faire une fois, par toi)
+## Mise en ligne (Netlify, depuis 0.2.3)
 
-1. GitHub : https://github.com/ThyMori/MyRPGapp/settings/pages → **Source : GitHub Actions**.
-2. Même page → **Custom domain** : `myrpgapp.thierry-morin.com`, puis cocher **Enforce HTTPS** (après quelques minutes).
-3. Squarespace : Domaines → thierry-morin.com → **Paramètres DNS** → ajouter un enregistrement **CNAME**, hôte `myrpgapp`, valeur `thymori.github.io`.
-4. Si le premier déploiement (onglet Actions) a échoué avant l'étape 1 : bouton « Re-run all jobs ».
+1. Netlify (https://app.netlify.com) : site `myrpgapp` relié au dépôt `ThyMori/MyRPGapp`, redéployé à chaque push sur `main`.
+2. Les réglages sont dans `netlify.toml` : vérification des versions, tests, puis `npm run build` ; dossier publié `dist` ; Node 22. Si un test échoue, rien n'est publié et la version précédente reste en ligne.
+3. Domaine : Netlify → Domain management → `myrpgapp.thierry-morin.com`, certificat HTTPS automatique.
+4. Squarespace (Domaines → thierry-morin.com → Paramètres DNS) : CNAME hôte `myrpgapp` vers l'adresse `…netlify.app` du site, plus un TXT `subdomain-owner-verification` (preuve de propriété demandée par Netlify, à laisser en place).
+5. Aperçus : chaque branche ou demande de fusion a sa propre adresse de test (Netlify → Deploys).
+6. Retour arrière : Netlify → Deploys → choisir un ancien déploiement → Publish deploy.
 
 Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
-### Test de publication sur Cloudflare (0.2.1)
+### Historique des essais d'hébergement
 
-Essai d'un hébergement « pro » en parallèle de GitHub Pages (l'adresse officielle ne change pas pendant l'essai).
-
-- Projet Cloudflare : Workers & Pages → `myrpgapp`, relié à ce dépôt, redéployé à chaque push sur `main`.
-- Réglages du projet : commande de build `npm run build`, commande de déploiement `npx wrangler deploy`.
-- `wrangler.jsonc` (à la racine) dit à wrangler de publier le dossier `dist`. Son champ `name` doit rester identique au nom du projet Cloudflare.
-- Le fichier `public/CNAME` ne sert qu'à GitHub Pages ; Cloudflare l'ignore.
-- Bascule du sous-domaine : impossible tel quel. Cloudflare ne relie un domaine à un Worker que s'il gère lui-même `thierry-morin.com` (message « No zones match »). Il faudrait déplacer tout le domaine chez Cloudflare, ce qui touche le site principal : non fait.
-
-### Test de publication sur Netlify (0.2.2)
-
-Même principe, mais Netlify accepte un simple CNAME chez Squarespace.
-
-- `netlify.toml` (à la racine) donne la commande de build, le dossier `dist` et Node 22 : rien à régler à la main dans Netlify.
-- Mise en place : https://app.netlify.com → Add new project → Import an existing project → GitHub → `ThyMori/MyRPGapp`.
-- Étape suivante, une fois l'adresse en `.netlify.app` validée : Domain management → Add a domain → CNAME chez Squarespace (hôte `myrpgapp`) vers l'adresse donnée par Netlify, puis HTTPS automatique.
-- Offre gratuite à quota mensuel de crédits : vérifier la page de tarifs Netlify avant tout usage pro.
+- **GitHub Pages** (jusqu'à 0.2.2) : abandonné, ses conditions excluent l'usage commercial. Pour y revenir : recréer un workflow de publication, CNAME vers `thymori.github.io`, Settings → Pages. Le fichier `public/CNAME` ne sert plus, il est inoffensif.
+- **Cloudflare** (essai 0.2.1) : la publication marche (`wrangler.jsonc` publie `dist`, son `name` doit rester identique au projet), mais le domaine ne peut pas y être relié sans déplacer tout `thierry-morin.com` chez Cloudflare (message « No zones match »). Non retenu pour l'instant ; `wrangler.jsonc` est à supprimer avec le projet Cloudflare.
+- **Netlify** (essai 0.2.2) : retenu, un simple CNAME chez Squarespace suffit. Offre gratuite à quota mensuel de crédits : vérifier la page de tarifs avant tout usage pro.
 
 ## Fonctions livrées
 
 | Version | Fonction |
 |---|---|
+| 0.2.3 | Netlify devient l'hébergement officiel ; tests et contrôle de version avant chaque publication ; arrêt de la publication GitHub Pages ; aucun changement dans l'app |
 | 0.2.2 | Essai de publication sur Netlify (ajout de `netlify.toml`) ; aucun changement dans l'app |
 | 0.2.1 | Réparation de la publication Cloudflare (ajout de `wrangler.jsonc`) ; aucun changement dans l'app |
 | 0.2.0 | Dés plein écran (arrivée par le bas, rebonds sur les bords, effacement en fondu après 3 s) ; dés noirs ou blancs aux chiffres rouges, plus gros ; bruit des dés (roulement et chocs), les deux réglages dans le menu ⚙ |

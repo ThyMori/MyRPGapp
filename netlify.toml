@@ -2,8 +2,9 @@
 # Ainsi rien n'est à régler à la main dans l'interface, et tout est versionné avec le code.
 
 [build]
-  # Commande qui contrôle les types puis construit le site (voir package.json).
-  command = "npm run build"
+  # Vérifie les numéros de version, lance les tests, puis contrôle les types et construit le site.
+  # Si une étape échoue, rien n'est publié : la version précédente reste en ligne.
+  command = "node scripts/bump-version.mjs --check && npm test && npm run build"
   # Dossier produit par Vite, envoyé tel quel sur le réseau de Netlify.
   publish = "dist"
 
