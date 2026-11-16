@@ -14,6 +14,10 @@
 .omen-figure { position: relative; width: min(86vw, 62vh); } /* zone du dessin */
 .omen-svg { width: 100%; height: auto; display: block; overflow: visible; } /* le dessin suit la zone */
 
+/* Mode 3D (shaders) : le canvas remplit le calque ; l'opacité est gérée par le programme graphique. */
+.omen-gl { animation: none; }
+.omen-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
 /* Couleurs des dégradés (arrêts) : toujours des variables. */
 .stop-gold { stop-color: var(--omen-gold); }
 .stop-fire { stop-color: var(--omen-fire); }

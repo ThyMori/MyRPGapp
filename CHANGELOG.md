@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.4.0 — 2026-11-16
+- Présages en rendu 3D (shaders), réglage des effets
+
 ## 0.3.0 — 2026-11-16
 - Présages animés et sonores (Œil de Sauron, Rune de Gandalf), Œil et rune redessinés, plus de trait sous le 6
 

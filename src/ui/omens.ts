@@ -1,6 +1,8 @@
 // Présages : quand l'Œil de Sauron ou la rune de Gandalf sort sur le dé du Destin, une courte scène plein écran s'anime, avec son.
 // Les dessins sont construits ici (éléments SVG) ; les mouvements et les couleurs sont dans src/styles/omens.css.
 import { playEyeSound, playGandalfSound, stopOmenSound } from '../audio/omenSound'; // sons
+import { OmenGL } from '../omen3d/OmenGL'; // rendu 3D (shaders)
+import { fxLevel } from './prefs'; // niveau des effets
 
 export type OmenKind = 'eye' | 'gandalf'; // les deux présages
 
@@ -68,6 +70,8 @@ function dessinBaton(): SVGElement {
 }
 
 let racine: HTMLElement | null = null; // calque des présages
+let canvas3d: HTMLCanvasElement | null = null; // canvas du rendu 3D (créé au premier besoin)
+let moteur: OmenGL | null | undefined; // moteur 3D (undefined = pas encore essayé, null = indisponible)
 let ouvert = false; // un présage est affiché
 
 // Fabrique les petites étincelles (éléments HTML) du présage de Gandalf.
@@ -91,6 +95,7 @@ export function isOmenOpen(): boolean {
 // Ferme tout de suite le présage (appui sur l'écran, bouton Retour, nouveau lancer).
 export function closeOmen(): void {
   window.clearTimeout(minuteur); // annule la fermeture automatique
+  moteur?.stop(); // arrête le rendu 3D
   stopOmenSound(); // coupe le son
   ouvert = false; // plus de présage
   if (racine) {
@@ -100,12 +105,34 @@ export function closeOmen(): void {
   }
 }
 
+// Tente de jouer la scène en 3D (shaders). Rend false si l'appareil ne sait pas (les dessins plats prennent le relais).
+function jouer3d(kind: OmenKind): boolean {
+  if (!racine) return false; // pas initialisé
+  if (!canvas3d) {
+    canvas3d = document.createElement('canvas'); // canvas du rendu
+    canvas3d.className = 'omen-canvas'; // style
+  }
+  racine.className = `omen omen-gl omen-${kind}`; // calque en mode 3D
+  racine.appendChild(canvas3d); // le canvas doit être dans la page pour avoir une taille
+  if (moteur === undefined) moteur = OmenGL.create(canvas3d); // crée le moteur une seule fois
+  if (moteur && moteur.start(kind, fxLevel())) return true; // la scène tourne
+  racine.replaceChildren(); // échec : retire le canvas
+  return false; // repli
+}
+
 // Joue un présage. sound = jouer le son ? reduit = l'appareil réduit les animations (image fixe).
 export function playOmen(kind: OmenKind, sound: boolean, reduit: boolean): void {
   if (!racine) return; // pas initialisé
   closeOmen(); // un seul présage à la fois
-  racine.className = `omen omen-${kind}${reduit ? ' omen-fixe' : ''}`; // classes : type et mode
   racine.replaceChildren(); // repart d'un calque vide
+  if (!reduit && fxLevel() !== 'off' && jouer3d(kind)) {
+    racine.hidden = false; // montre le calque
+    ouvert = true; // un présage est affiché
+    if (sound) (kind === 'eye' ? playEyeSound : playGandalfSound)(); // le son qui va avec
+    minuteur = window.setTimeout(closeOmen, DUREE_MS); // ferme à la fin de la scène
+    return; // la scène 3D tourne : rien d'autre à faire
+  }
+  racine.className = `omen omen-${kind}${reduit ? ' omen-fixe' : ''}`; // repli : dessins plats (classes : type et mode)
   const lueur = document.createElement('div'); // lueur de fond (rouge ou bleue)
   lueur.className = 'omen-glow'; // style
   const figure = document.createElement('div'); // zone du dessin

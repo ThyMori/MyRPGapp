@@ -37,6 +37,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.4.0 | Présages en rendu 3D (shaders WebGL) : Œil de feu avec flammes, braises, battements, tremblement au cor ; bâton de Gandalf avec cristal rayonnant, onde de lumière, poussière d'étoiles ; réglage « Effets des présages » (élevés / réduits / simples), baisse automatique si l'appareil rame |
 | 0.3.0 | Présages : scène plein écran animée avec son quand l'Œil de Sauron (feu, battements, cor dissonant) ou la Rune de Gandalf (bâton en lumière bleue, carillon féérique) sort sur le dé du Destin gardé ; Œil et rune redessinés avec plus de détails ; plus de trait sous le 6 du d6 |
 | 0.2.7 | Chiffres et symboles gravés (creusés) dans les dés (relief calculé par `src/dice3d/engrave.ts`) ; symbole de réussite en tau grec (τ), petit, avec le 6 au milieu de la face |
 | 0.2.6 | Dés blancs couleur crème ; angles et arêtes des dés arrondis, faces toujours plates (`src/dice3d/rounded.ts`) |
@@ -87,6 +88,12 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 - `src/ui/omens.ts` : construit la scène (dessins SVG) et la ferme au toucher, au bouton Retour (`close-omen`) ou au lancer suivant ; `src/styles/omens.css` : mouvements (≈ 2,8 s) ; `src/audio/omenSound.ts` : sons synthétisés.
 - Seulement pour le dé du Destin **gardé** (Favorisé / Défavorisé : l'autre dé ne déclenche rien). Le réglage « Son des dés » coupe aussi le son des présages.
 - Animations réduites : image fixe pendant 1,8 s, sans mouvement.
+
+### Rendu 3D des présages (0.4.0)
+
+- `src/omen3d/shaders.ts` : programmes graphiques (GLSL), un rectangle plein écran dont chaque pixel est calculé par la carte graphique (aucune image, aucune bibliothèque) ; `OmenGL.ts` : moteur WebGL ; `timeline.ts` : chronologie pure (testée) synchronisée avec les sons ; `quality.ts` : niveaux d'effets (pur, testé).
+- Menu ⚙ « Effets des présages » : **élevés** (résolution jusqu'à 1,5×), **réduits** (0,6×, moins de couches de bruit), **simples** (dessins plats SVG de 0.3.0). Si les 12 premières images sont lentes (> 30 ms), la qualité baisse toute seule.
+- Repli automatique sur les dessins plats si WebGL manque ou si le contexte est perdu.
 
 ## Dépannage
 
