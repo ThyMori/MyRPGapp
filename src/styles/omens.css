@@ -88,3 +88,22 @@
 .omen-tier3 .omen-tau-line { filter: drop-shadow(0 0 14px var(--omen-gold)); } /* épique : plus de lumière */
 @keyframes omen-tau-pop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .omen-tau-glyph { opacity: 1; transform: none; } } /* image fixe */
+
+/* ---------- Annonce Réussite / Échec façon arcade 80's ---------- */
+.omen-verdict { background: var(--arcade-dim); animation-duration: 2.4s; cursor: pointer; } /* voile sombre, fondu sur 2,4 s */
+.omen-verdict::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, hsl(0 0% 0% / 0.28) 0 2px, transparent 2px 4px); } /* lignes de balayage d'un vieil écran */
+.arc-box { position: relative; text-align: center; font-family: 'Press Start 2P', monospace; width: 100%; } /* boîte de l'annonce */
+.arc-word { display: flex; justify-content: center; font-size: min(10vw, 7rem); line-height: 1.3; white-space: nowrap; } /* le mot : 8 lettres tiennent dans l'écran */
+.arc-letter { display: inline-block; opacity: 0; background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent; filter: drop-shadow(0.06em 0.06em 0 var(--arcade-edge)) drop-shadow(-0.04em -0.04em 0 var(--arcade-edge)) drop-shadow(0.04em -0.04em 0 var(--arcade-edge)) drop-shadow(-0.04em 0.04em 0 var(--arcade-edge)); animation: arc-slam 0.35s cubic-bezier(0.2, 1.5, 0.4, 1) forwards, arc-blink 0.4s steps(2, jump-none) 4 forwards; } /* lettre qui s'écrase puis clignote */
+.arc-win .arc-letter { background-image: linear-gradient(180deg, var(--arcade-white) 0 18%, var(--arcade-win-a) 18% 52%, var(--arcade-win-b) 52% 100%); } /* chrome jaune et orange à bandes dures */
+.arc-lose .arc-letter { background-image: linear-gradient(180deg, var(--arcade-white) 0 14%, var(--arcade-lose-a) 14% 50%, var(--arcade-lose-b) 50% 100%); animation: arc-slam 0.35s cubic-bezier(0.2, 1.5, 0.4, 1) forwards, arc-sag 1.2s ease-in forwards; } /* chrome rose et violet, lettres qui s'affaissent */
+.arc-sub { margin-top: 0.9em; font-size: min(3.2vw, 1.4rem); color: var(--arcade-cyan); text-shadow: 0.12em 0.12em 0 var(--arcade-edge); animation: arc-blink 0.5s steps(2, jump-none) 4; } /* niveau de réussite en cyan clignotant */
+.arc-line { height: 0.35rem; margin: 0.8rem auto; width: 86%; background: linear-gradient(90deg, transparent, var(--arcade-pink), var(--arcade-cyan), var(--arcade-pink), transparent); box-shadow: 0 0 12px var(--arcade-pink); animation: arc-line 0.5s ease-out both; } /* néon rose et cyan */
+.arc-lose .arc-line { background: linear-gradient(90deg, transparent, var(--arcade-lose-b), var(--arcade-lose-a), var(--arcade-lose-b), transparent); box-shadow: 0 0 12px var(--arcade-lose-a); } /* néon d'échec */
+.arc-box { animation: arc-shake 0.4s linear 0.3s; } /* tout l'écran tremble à l'impact */
+@keyframes arc-slam { 0% { opacity: 0; transform: translateY(-3.2em) scale(2.4); } 60% { opacity: 1; transform: translateY(0.12em) scale(0.92); } 100% { opacity: 1; transform: translateY(0) scale(1); } } /* chute avec rebond */
+@keyframes arc-blink { 0% { filter: brightness(1.8) drop-shadow(0.06em 0.06em 0 var(--arcade-edge)); } 100% { filter: brightness(1) drop-shadow(0.06em 0.06em 0 var(--arcade-edge)); } } /* éclat qui clignote */
+@keyframes arc-sag { 0% { opacity: 1; transform: translateY(0) rotate(0); } 100% { opacity: 1; transform: translateY(0.18em) rotate(calc(var(--i, 1) * 4deg)); } } /* affaissement */
+@keyframes arc-line { from { transform: scaleX(0); } to { transform: scaleX(1); } } /* le néon s'étire */
+@keyframes arc-shake { 0%, 100% { transform: translate(0, 0); } 20% { transform: translate(-5px, 4px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-3px, -4px); } 80% { transform: translate(3px, 3px); } } /* tremblement */
+@media (prefers-reduced-motion: reduce) { .arc-letter, .arc-sub, .arc-line, .arc-box { animation: none !important; opacity: 1; } } /* image fixe */

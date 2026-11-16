@@ -17,3 +17,8 @@ export function sanitizeSound(raw: unknown): boolean {
 export function otherStyle(s: DiceStyle): DiceStyle {
   return s === 'black' ? 'white' : 'black'; // bascule
 }
+
+// Remet en ordre le réglage « annonce Réussite / Échec » : activée par défaut, coupée seulement si la valeur est exactement false.
+export function sanitizeVerdict(raw: unknown): boolean {
+  return raw !== false; // même règle que le son
+}

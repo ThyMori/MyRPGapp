@@ -1,6 +1,8 @@
 // Présages : quand l'Œil de Sauron ou la rune de Gandalf sort sur le dé du Destin, une courte scène plein écran s'anime, avec son.
 // Les dessins sont construits ici (éléments SVG) ; les mouvements et les couleurs sont dans src/styles/omens.css.
 import { playEyeSound, playGandalfSound, playTauSound, stopOmenSound } from '../audio/omenSound'; // sons
+import { playVerdictSound } from '../audio/verdictSound'; // sons de l'annonce Réussite / Échec
+import { buildVerdict } from './verdict'; // décor de l'annonce
 import { OmenGL } from '../omen3d/OmenGL'; // rendu 3D (shaders)
 import { tauDuree } from '../omen3d/timeline'; // durée de la fête des tau
 import { fxLevel } from './prefs'; // niveau des effets
@@ -9,12 +11,16 @@ export type OmenKind = 'eye' | 'gandalf' | 'tau'; // les présages et la fête d
 
 // Une scène à jouer : pour les tau, niveau (1 sympa, 2 grandiose, 3 épique) et nombre de tau dessinés.
 export interface Scene {
-  kind: OmenKind; // type de scène
+  kind: OmenKind | 'verdict' | 'pause'; // type de scène (« verdict » = annonce Réussite / Échec, « pause » = attente sans rien afficher)
+  win?: boolean; // verdict : jet réussi ?
+  sous?: string; // verdict : ligne sous le mot (niveau de réussite)
+  ms?: number; // pause : durée en millisecondes
   tier?: number; // niveau de la fête (tau seulement)
   n?: number; // nombre de tau (tau seulement)
 }
 
 const DUREE_MS = 2800; // durée de la scène animée
+const VERDICT_MS = 2400; // durée de l'annonce Réussite / Échec
 const DUREE_FIXE_MS = 1800; // durée si l'appareil réduit les animations : image fixe, sans mouvement
 const NS = 'http://www.w3.org/2000/svg'; // espace de noms SVG
 
@@ -128,6 +134,7 @@ function fermer(): void {
     racine.hidden = true; // cache le calque
     racine.className = 'omen'; // retire les classes d'animation
     racine.replaceChildren(); // vide
+    void racine.offsetWidth; // force le navigateur à appliquer l'état caché : l'animation CSS de la scène suivante repart de zéro
   }
 }
 
@@ -138,23 +145,25 @@ export function closeOmen(): void {
 }
 
 // Tente de jouer la scène en 3D (shaders). Rend false si l'appareil ne sait pas (les dessins plats prennent le relais).
-function jouer3d(sc: Scene): boolean {
+function jouer3d(sc: Scene, kind: OmenKind): boolean {
   if (!racine) return false; // pas initialisé
   if (!canvas3d) {
     canvas3d = document.createElement('canvas'); // canvas du rendu
     canvas3d.className = 'omen-canvas'; // style
   }
-  racine.className = `omen omen-gl omen-${sc.kind}`; // calque en mode 3D
+  racine.className = `omen omen-gl omen-${kind}`; // calque en mode 3D
   racine.appendChild(canvas3d); // le canvas doit être dans la page pour avoir une taille
   if (moteur === undefined) moteur = OmenGL.create(canvas3d); // crée le moteur une seule fois
-  if (moteur && moteur.start(sc.kind, fxLevel(), { tier: sc.tier ?? 1, n: sc.n ?? 1 })) return true; // la scène tourne
+  if (moteur && moteur.start(kind, fxLevel(), { tier: sc.tier ?? 1, n: sc.n ?? 1 })) return true; // la scène tourne
   racine.replaceChildren(); // échec : retire le canvas
   return false; // repli
 }
 
 // Durée d'une scène en millisecondes.
-function dureeMs(sc: Scene): number {
-  if (animReduite) return DUREE_FIXE_MS; // image fixe : courte
+export function dureeMs(sc: Scene, reduit = animReduite): number {
+  if (sc.kind === 'pause') return sc.ms ?? 0; // attente
+  if (sc.kind === 'verdict') return reduit ? DUREE_FIXE_MS : VERDICT_MS; // annonce
+  if (reduit) return DUREE_FIXE_MS; // image fixe : courte
   return sc.kind === 'tau' ? tauDuree(sc.tier ?? 1) * 1000 : DUREE_MS; // fête : selon le niveau
 }
 
@@ -166,14 +175,28 @@ function suivante(): void {
     return;
   }
   fermer(); // efface la scène précédente
+  if (sc.kind === 'pause') {
+    minuteur = window.setTimeout(suivante, dureeMs(sc)); // on attend, sans rien montrer
+    return;
+  }
+  if (sc.kind === 'verdict') {
+    racine.className = `omen omen-verdict${animReduite ? ' omen-fixe' : ''}`; // calque de l'annonce
+    racine.appendChild(buildVerdict(sc.win === true, sc.sous ?? '')); // le décor
+    racine.hidden = false; // montre
+    ouvert = true; // une scène est affichée
+    if (avecSon) playVerdictSound(sc.win === true); // la fanfare ou la chute
+    minuteur = window.setTimeout(suivante, dureeMs(sc)); // fin de l'annonce
+    return;
+  }
+  const kind = sc.kind; // présage ou fête
   const son = () => {
     if (!avecSon) return; // son coupé
-    if (sc.kind === 'eye') playEyeSound(); // l'Œil
-    else if (sc.kind === 'gandalf') playGandalfSound(); // le bâton
+    if (kind === 'eye') playEyeSound(); // l'Œil
+    else if (kind === 'gandalf') playGandalfSound(); // le bâton
     else playTauSound(sc.tier ?? 1, sc.n ?? 1); // la fête des tau
   };
   const fin = window.setTimeout(suivante, dureeMs(sc)); // fin de la scène, puis la suivante
-  if (!animReduite && fxLevel() !== 'off' && jouer3d(sc)) {
+  if (!animReduite && fxLevel() !== 'off' && jouer3d(sc, kind)) {
     racine.hidden = false; // montre le calque
     ouvert = true; // une scène est affichée
     son(); // le son qui va avec

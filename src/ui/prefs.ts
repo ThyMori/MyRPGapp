@@ -1,7 +1,7 @@
 // Préférences de l'appareil, dans le menu ⚙ : couleur des dés (noir / blanc) et son.
 import { previewDiceSound } from '../audio/diceSound'; // petit « toc » de confirmation
 import { nextFx, sanitizeFx, type Fx } from '../omen3d/quality'; // niveau des effets des présages
-import { otherStyle, sanitizeDiceStyle, sanitizeSound, type DiceStyle } from '../state/prefs'; // règles pures
+import { otherStyle, sanitizeDiceStyle, sanitizeSound, sanitizeVerdict, type DiceStyle } from '../state/prefs'; // règles pures
 import { loadJson, saveJson } from '../state/storage'; // mémoire locale
 import { byId } from './dom'; // recherche d'élément
 import { showToast } from './toast'; // messages
@@ -9,6 +9,12 @@ import { showToast } from './toast'; // messages
 let style: DiceStyle = 'black'; // couleur des dés
 let son = true; // son activé ?
 let fx: Fx = 'high'; // niveau des effets des présages
+let verdict = true; // annonce Réussite / Échec activée ?
+
+// L'annonce Réussite / Échec est-elle activée ?
+export function verdictEnabled(): boolean {
+  return verdict; // réglage courant
+}
 
 // Niveau des effets des présages.
 export function fxLevel(): Fx {
@@ -29,6 +35,7 @@ function appliquerStyle(): void {
 function libelles(): void {
   byId('mi-dice-color').textContent = `Couleur des dés : ${style === 'black' ? 'noire' : 'blanche'}`; // état courant
   byId('mi-sound').textContent = `Son des dés : ${son ? 'activé' : 'coupé'}`; // état courant
+  byId('mi-verdict').textContent = `Annonce Réussite / Échec : ${verdict ? 'activée' : 'coupée'}`; // état courant
   byId('mi-fx').textContent = `Effets des présages : ${fx === 'high' ? 'élevés' : fx === 'low' ? 'réduits' : 'simples'}`; // état courant
 }
 
@@ -37,6 +44,7 @@ export function initPrefs(onStyle: (s: DiceStyle) => void): void {
   style = sanitizeDiceStyle(loadJson('diceStyle')); // dernière couleur choisie
   son = sanitizeSound(loadJson('sound')); // dernier réglage du son
   fx = sanitizeFx(loadJson('fx')); // dernier niveau d'effets
+  verdict = sanitizeVerdict(loadJson('verdict')); // dernier réglage de l'annonce
   appliquerStyle(); // applique tout de suite (avant la création de la 3D)
   libelles(); // texte des entrées de menu
   byId('mi-dice-color').addEventListener('click', () => {
@@ -52,6 +60,12 @@ export function initPrefs(onStyle: (s: DiceStyle) => void): void {
     saveJson('fx', fx); // mémorise
     libelles(); // met à jour le texte
     showToast(fx === 'high' ? 'Effets des présages : élevés.' : fx === 'low' ? 'Effets des présages : réduits (plus léger pour la batterie).' : 'Effets des présages : dessins simples.', 'ok'); // retour
+  });
+  byId('mi-verdict').addEventListener('click', () => {
+    verdict = !verdict; // bascule
+    saveJson('verdict', verdict); // mémorise
+    libelles(); // met à jour le texte
+    showToast(verdict ? 'Annonce Réussite / Échec activée.' : 'Annonce Réussite / Échec coupée.', 'ok'); // retour
   });
   byId('mi-sound').addEventListener('click', () => {
     son = !son; // bascule

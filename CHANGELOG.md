@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.7.0 — 2026-11-16
+- Annonce Réussite / Échec façon arcade 80's
+
 ## 0.6.2 — 2026-11-16
 - Retour sur GitHub Pages, Netlify en pause
 

@@ -40,6 +40,16 @@
   --omen-ice: hsl(200 100% 82%); /* cristal clair */
   --omen-white: hsl(200 100% 97%); /* cœur du cristal */
   --omen-gold-deep: hsl(36 80% 20%); /* fond doré de la fête des runes */
+  /* Annonce Réussite / Échec façon arcade 80's. */
+  --arcade-win-a: hsl(52 100% 62%); /* haut des lettres de réussite : jaune */
+  --arcade-win-b: hsl(14 100% 52%); /* bas des lettres de réussite : orange rouge */
+  --arcade-lose-a: hsl(350 90% 66%); /* haut des lettres d'échec : rose rouge */
+  --arcade-lose-b: hsl(285 70% 34%); /* bas des lettres d'échec : violet */
+  --arcade-edge: hsl(250 60% 8%); /* contour sombre des lettres */
+  --arcade-white: hsl(0 0% 100%); /* reflet chromé */
+  --arcade-pink: hsl(320 100% 62%); /* néon rose */
+  --arcade-cyan: hsl(185 100% 58%); /* néon cyan */
+  --arcade-dim: hsl(250 50% 6% / 0.5); /* voile sombre derrière l'annonce */
   --omen-wood: hsl(32 28% 36%); /* bois du bâton */
 
   /* Polices (hébergées dans l'app, importées dans src/main.ts). */

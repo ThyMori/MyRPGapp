@@ -5,7 +5,7 @@ import { audioContext, fadeOutAndDisconnect, noiseBuffer } from './core'; // con
 let courant: GainNode | null = null; // volume du présage en cours (pour pouvoir le couper)
 
 // Prépare la sortie d'un nouveau présage : coupe le précédent et rend un volume général branché aux haut-parleurs.
-function sortie(c: AudioContext): GainNode {
+export function sortie(c: AudioContext): GainNode {
   stopOmenSound(); // un seul présage à la fois
   const g = c.createGain(); // volume général
   g.gain.value = 0.8; // niveau général : les présages restent plus discrets que le pire des chocs de dés
@@ -15,7 +15,7 @@ function sortie(c: AudioContext): GainNode {
 }
 
 // Une « voix » : un oscillateur dont le volume monte (attaque), tient, puis redescend à zéro. Les instants sont en secondes sur l'horloge audio.
-function voix(c: AudioContext, vers: AudioNode, type: OscillatorType, freq: number, debut: number, fin: number, crete: number, attaque: number, glisse?: number): void {
+export function voix(c: AudioContext, vers: AudioNode, type: OscillatorType, freq: number, debut: number, fin: number, crete: number, attaque: number, glisse?: number): void {
   const o = c.createOscillator(); // la source
   o.type = type; // forme d'onde
   o.frequency.setValueAtTime(freq, debut); // hauteur de départ

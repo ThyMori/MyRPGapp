@@ -119,6 +119,7 @@ export class DiceStage {
   private witherTimer = 0; // minuteur « le flétrissement commence »
   private witherRaf = 0; // animation du flétrissement
   private sonFletri = false; // jouer les battements de cœur ?
+  private maintien = MAINTIEN_MS; // durée prévue pendant laquelle les dés restent visibles après l'arrivée
   private observer: ResizeObserver; // surveille la taille de l'écran
   private mouvementReduit: MediaQueryList; // préférence « réduire les animations »
 
@@ -385,7 +386,8 @@ export class DiceStage {
     const flétris = this.dice.filter((d) => d.fletri); // dés qui vont se flétrir
     const animer = flétris.length > 0 && !this.mouvementReduit.matches; // animation de flétrissement ?
     if (flétris.length > 0 && !animer) this.appliquerFletri(1, 0); // animations réduites : on montre directement l'état flétri
-    this.holdTimer = window.setTimeout(() => this.fadeOut(), MAINTIEN_MS + (animer ? MAINTIEN_FLETRI_MS : 0)); // les dés restent visibles un moment (plus longtemps s'ils se flétrissent)
+    this.maintien = MAINTIEN_MS + (animer ? MAINTIEN_FLETRI_MS : 0); // durée de maintien (plus longue si les dés se flétrissent)
+    this.holdTimer = window.setTimeout(() => this.fadeOut(), this.maintien); // les dés restent visibles un moment
     if (animer) this.witherTimer = window.setTimeout(() => this.lancerFletri(flétris.length), ATTENTE_FLETRI_MS); // le flétrissement commence juste après l'arrivée
     cb?.(); // prévient l'appelant
   }
@@ -427,6 +429,19 @@ export class DiceStage {
   // Orientation d'un dé qui se flétrit : son orientation d'arrivée, inclinée progressivement.
   private baseQuatFletri(d: DieView, w: number): Quaternion {
     return new Quaternion().copy(d.finalQuat).slerp(new Quaternion().copy(d.tilt).multiply(d.finalQuat), w); // du dé droit au dé incliné
+  }
+
+  // Durée prévue pendant laquelle les dés restent visibles après l'arrivée (en millisecondes).
+  plannedHold(): number {
+    return this.maintien; // valeur courante
+  }
+
+  // Change la durée de maintien (comptée depuis l'arrivée des dés) : sert à faire coïncider l'effacement des dés avec l'annonce Réussite / Échec.
+  holdFor(ms: number): void {
+    if (this.canvas.hidden) return; // plus de dés affichés
+    window.clearTimeout(this.holdTimer); // annule l'effacement prévu
+    this.maintien = ms; // mémorise
+    this.holdTimer = window.setTimeout(() => this.fadeOut(), ms); // reprogramme
   }
 
   // Efface les dés en fondu.
