@@ -26,8 +26,8 @@ const DECALAGE_MS = 25;
 const MAINTIEN_MS = 3000;
 const FONDU_MS = 600;
 // Les dés flétris : attente après l'arrivée avant que ça commence, et temps de visibilité supplémentaire.
-const ATTENTE_FLETRI_MS = 350;
-const MAINTIEN_FLETRI_MS = 1800;
+const ATTENTE_FLETRI_MS = 250;
+const MAINTIEN_FLETRI_MS = 1200;
 // Couleur de cendre vers laquelle un dé flétri se ternit.
 const CENDRE = new Color(0x2e2528);
 // Champ de vision de la caméra, en degrés.
@@ -243,7 +243,7 @@ export class DiceStage {
       tpl, group, shadow, size, restY: tpl.restY * (size / tpl.scale), // le dé réduit se pose plus bas
       flight: { start: { x: 0, z: 0 }, virtual: { x: 0, z: 0 }, rest: { x: 0, z: 0 } }, // trajectoire provisoire
       startY: 5, axis: new Vector3(0, 1, 0), turns: 0, finalQuat: new Quaternion(), delay: 0, duration: DUREE_MS, // état initial
-      fletri, propres, baseColor: tpl.bodyMat.color.clone(), tilt: new Quaternion().setFromAxisAngle(new Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), 0.16), // flétrissement
+      fletri, propres, baseColor: tpl.bodyMat.color.clone(), tilt: new Quaternion().setFromAxisAngle(new Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), 0.32), // flétrissement
     };
   }
 
@@ -408,14 +408,14 @@ export class DiceStage {
   private appliquerFletri(w: number, beat: number): void {
     for (const d of this.dice) {
       if (!d.fletri) continue; // dé intact
-      const gris = new Color().copy(d.baseColor).lerp(CENDRE, w * 0.88); // le corps se ternit vers la cendre
-      const lueur = beat * (1 - 0.5 * w); // le battement allume une lueur rouge, de plus en plus faible
+      const gris = new Color().copy(d.baseColor).lerp(CENDRE, w * 0.97); // le corps se ternit vers la cendre
+      const lueur = beat * (1 - 0.4 * w); // le battement allume une lueur rouge, de plus en plus faible
       d.propres.forEach((m, i) => {
         if (i === 0) m.color.copy(gris); // corps
-        else m.color.setScalar(1 - 0.65 * w); // étiquettes : s'assombrissent (la gravure rouge s'éteint)
-        m.emissive.setRGB(0.6 * lueur, 0.04 * lueur, 0.04 * lueur); // lueur du battement
+        else m.color.setScalar(1 - 0.85 * w); // étiquettes : s'assombrissent (la gravure rouge s'éteint)
+        m.emissive.setRGB(0.9 * lueur, 0.05 * lueur, 0.05 * lueur); // lueur du battement
       });
-      const taille = d.size * (1 - 0.2 * w + 0.07 * beat); // le dé se recroqueville, gonfle un peu à chaque battement
+      const taille = d.size * (1 - 0.38 * w + 0.1 * beat); // le dé se recroqueville, gonfle à chaque battement
       d.group.scale.setScalar(taille); // applique la taille
       d.group.position.y = d.restY * (taille / d.size); // reste posé sur la table
       d.group.quaternion.copy(this.baseQuatFletri(d, w)); // s'incline un peu

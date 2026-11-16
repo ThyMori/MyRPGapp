@@ -17,7 +17,7 @@ describe('witherState', () => {
   });
   it('bat de plus en plus faiblement et de plus en plus lentement', () => {
     expect(witherState(BATTEMENTS[0][0]).beat).toBeCloseTo(1); // premier battement franc
-    expect(witherState(2.4).beat).toBeLessThan(0.4); // dernier battement faible
+    expect(witherState(1.75).beat).toBeLessThanOrEqual(0.4); // dernier battement faible
     for (let t = 0; t <= WITHER_DUREE_S; t += 0.02) {
       const b = witherState(t).beat;
       expect(b).toBeGreaterThanOrEqual(0); // jamais négatif

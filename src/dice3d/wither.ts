@@ -1,13 +1,13 @@
 // Flétrissement des dés annulés (état Épuisé) : chronologie pure, partagée par l'animation et le son pour qu'ils restent synchronisés.
 
-export const WITHER_DUREE_S = 2.6; // durée du flétrissement, en secondes
+export const WITHER_DUREE_S = 1.9; // durée du flétrissement, en secondes
 
 // Battements de cœur : [instant, force]. Des « lub-dub » qui se ralentissent et faiblissent.
 export const BATTEMENTS: [number, number][] = [
-  [0.0, 1.0], [0.17, 0.7], // premier battement, franc
-  [0.7, 0.85], [0.88, 0.6], // deuxième, un peu plus lent
-  [1.5, 0.6], [1.7, 0.42], // troisième, plus faible
-  [2.4, 0.3], // dernier souffle : un seul coup, à peine
+  [0.0, 1.0], [0.15, 0.75], // premier battement, franc
+  [0.55, 0.9], [0.7, 0.65], // deuxième, un peu plus lent
+  [1.15, 0.7], [1.3, 0.5], // troisième, plus faible
+  [1.75, 0.4], // dernier souffle : un seul coup
 ];
 
 // Marche douce de 0 à 1 entre deux instants.
@@ -27,5 +27,5 @@ export function witherState(t: number): WitherState {
     if (t < tb) continue; // pas encore battu
     beat = Math.max(beat, f * Math.exp(-(t - tb) * 14)); // gonfle d'un coup, puis retombe vite
   }
-  return { wither: lisse(0.15, 2.3, t), beat }; // flétrissement lent, battements brefs
+  return { wither: lisse(0.08, 1.5, t), beat }; // flétrissement lent, battements brefs
 }

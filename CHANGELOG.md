@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.6.1 — 2026-11-16
+- Dés flétris : plus marqué et plus rapide, battement de cœur plus audible (haut-parleur de téléphone)
+
 ## 0.6.0 — 2026-11-16
 - Dés annulés par Épuisé : flétrissement et battements de cœur
 
