@@ -53,3 +53,34 @@ describe('gandalfState', () => {
     expect(gandalfState(DUREE_S).fade).toBeCloseTo(0); // fondu final
   });
 });
+
+import { tauArrivee, tauDuree, tauState } from './timeline'; // fête des tau
+
+describe('tauState', () => {
+  it('dure plus longtemps à mesure que la fête grandit', () => {
+    expect(tauDuree(1)).toBeLessThan(tauDuree(2)); // grandiose > sympa
+    expect(tauDuree(2)).toBeLessThan(tauDuree(3)); // épique > grandiose
+  });
+  it('commence et finit invisible, avec des valeurs entre 0 et 1', () => {
+    for (const tier of [1, 2, 3]) {
+      const d = tauDuree(tier);
+      expect(tauState(0, tier, 3).fade).toBe(0); // invisible au début
+      expect(tauState(d, tier, 3).fade).toBeCloseTo(0); // invisible à la fin
+      for (let t = 0; t <= d; t += 0.05) {
+        const s = tauState(t, tier, 4);
+        for (const v of [s.fade, s.flash, s.shake]) {
+          expect(v).toBeGreaterThanOrEqual(0); // jamais négatif
+          expect(v).toBeLessThanOrEqual(1 + 1e-9); // jamais au-dessus de 1
+        }
+      }
+    }
+  });
+  it("l'épique tremble plus fort que le sympa", () => {
+    const max = (tier: number) => Math.max(...Array.from({ length: 80 }, (_, k) => tauState(k * 0.05, tier, 3).shake));
+    expect(max(1)).toBe(0); // sympa : aucun tremblement
+    expect(max(3)).toBeGreaterThan(max(2)); // épique > grandiose
+  });
+  it('fait arriver les tau les uns après les autres', () => {
+    expect(tauArrivee(1)).toBeGreaterThan(tauArrivee(0)); // dans l'ordre
+  });
+});

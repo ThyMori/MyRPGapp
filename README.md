@@ -37,6 +37,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.5.0 | Fête des runes de réussite (τ) sur un jet réussi : 1 rune = sympa (1,8 s), 2 = grandiose (2,8 s), 3 ou plus = épique (3,8 s), en 3D avec son ; jouée après un éventuel présage ; repli en dessins plats |
 | 0.4.0 | Présages en rendu 3D (shaders WebGL) : Œil de feu avec flammes, braises, battements, tremblement au cor ; bâton de Gandalf avec cristal rayonnant, onde de lumière, poussière d'étoiles ; réglage « Effets des présages » (élevés / réduits / simples), baisse automatique si l'appareil rame |
 | 0.3.0 | Présages : scène plein écran animée avec son quand l'Œil de Sauron (feu, battements, cor dissonant) ou la Rune de Gandalf (bâton en lumière bleue, carillon féérique) sort sur le dé du Destin gardé ; Œil et rune redessinés avec plus de détails ; plus de trait sous le 6 du d6 |
 | 0.2.7 | Chiffres et symboles gravés (creusés) dans les dés (relief calculé par `src/dice3d/engrave.ts`) ; symbole de réussite en tau grec (τ), petit, avec le 6 au milieu de la face |
@@ -93,6 +94,7 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 
 - `src/omen3d/shaders.ts` : programmes graphiques (GLSL), un rectangle plein écran dont chaque pixel est calculé par la carte graphique (aucune image, aucune bibliothèque) ; `OmenGL.ts` : moteur WebGL ; `timeline.ts` : chronologie pure (testée) synchronisée avec les sons ; `quality.ts` : niveaux d'effets (pur, testé).
 - Menu ⚙ « Effets des présages » : **élevés** (résolution jusqu'à 1,5×), **réduits** (0,6×, moins de couches de bruit), **simples** (dessins plats SVG de 0.3.0). Si les 12 premières images sont lentes (> 30 ms), la qualité baisse toute seule.
+- **Fête des tau (0.5.0)** : `tauTier` (`src/omen3d/tier.ts`) donne le niveau d'après le nombre de runes des dés de Maîtrise, seulement si le jet est réussi (pas sur un échec, pas pour la rune de Gandalf). Jusqu'à 5 tau sont dessinés. Les scènes s'enchaînent (`playOmens`) : présage puis fête. Chronologie : `tauState` dans `timeline.ts`.
 - Repli automatique sur les dessins plats si WebGL manque ou si le contexte est perdu.
 
 ## Dépannage

@@ -76,3 +76,44 @@ export function gandalfState(t: number): GandalfState {
     fade: fondu(t), // opacité
   };
 }
+
+// ---------- Fête des runes de réussite (tau) ----------
+
+// Durée de la scène selon le niveau (1 sympa, 2 grandiose, 3 épique).
+export function tauDuree(tier: number): number {
+  return tier >= 3 ? 3.8 : tier === 2 ? 2.8 : 1.8; // en secondes
+}
+
+// Instant où le tau numéro i apparaît (en secondes).
+export function tauArrivee(i: number): number {
+  return 0.2 + i * 0.28; // un tau toutes les 0,28 s
+}
+
+// Coups forts de la scène : [instant, éclair, tremblement], de 0 à 1.
+function coups(tier: number, n: number): [number, number, number][] {
+  if (tier <= 1) return [[0.2, 0.3, 0]]; // sympa : un petit éclat
+  if (tier === 2) return [[0.2, 0.4, 0.2], [0.48, 0.7, 0.6]]; // grandiose : deux coups
+  const liste: [number, number, number][] = []; // épique : un coup par tau, puis deux grands finaux
+  for (let i = 0; i < n; i++) liste.push([tauArrivee(i), 0.45, 0.35]); // un coup à chaque tau
+  liste.push([tauArrivee(n - 1) + 0.35, 1, 1]); // grand final
+  liste.push([2.0, 0.8, 0.8]); // second final
+  return liste;
+}
+
+// État de la fête à l'instant t.
+export interface TauState {
+  fade: number; // opacité d'ensemble, 0 à 1
+  shake: number; // tremblement, 0 à 1
+  flash: number; // éclair, 0 à 1
+}
+export function tauState(t: number, tier: number, n: number): TauState {
+  const d = tauDuree(tier); // durée de la scène
+  let flash = 0; // éclair (le plus fort des coups)
+  let shake = 0; // tremblement (le plus fort des coups)
+  for (const [te, f, s] of coups(tier, Math.max(1, n))) {
+    if (t < te) continue; // coup pas encore donné
+    flash = Math.max(flash, f * Math.exp(-(t - te) * 9)); // éclair qui retombe vite
+    shake = Math.max(shake, s * Math.exp(-(t - te) * 4)); // tremblement qui s'éteint
+  }
+  return { fade: lisse(0, 0.15, t) * (1 - lisse(d - 0.45, d, t)), shake, flash }; // fondu à l'entrée et à la sortie
+}

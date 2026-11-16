@@ -176,3 +176,71 @@ void main() {
   gl_FragColor = sortie(col, sombre);
 }
 `;
+
+// La fête des runes de réussite : des tau d'or qui surgissent. Niveau 1 : éclat discret ; 2 : ondes et rayons ; 3 : épique
+// (rayons, colonne de lumière, lignes de vitesse, pluie d'étincelles, éclairs, tremblements).
+export const TAU_FRAG = COMMUN + `
+uniform float uTier; uniform float uN; uniform float uShake; uniform float uFlash;
+// Distance à un segment.
+float seg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a; vec2 ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }
+// Le tau (lettre grecque) : barre en haut, jambage central qui se recourbe en bas à droite. Rend la distance au tracé (négatif = dedans).
+float tau(vec2 p) {
+  float d = seg(p, vec2(-0.23, 0.15), vec2(0.23, 0.15));
+  d = min(d, seg(p, vec2(0.0, 0.15), vec2(0.0, -0.13)));
+  d = min(d, seg(p, vec2(0.0, -0.13), vec2(0.035, -0.19)));
+  d = min(d, seg(p, vec2(0.035, -0.19), vec2(0.11, -0.215)));
+  return d - 0.032;
+}
+void main() {
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  float ar = uRes.x / uRes.y;
+  p += uShake * 0.016 * vec2(sin(uT * 97.0), cos(uT * 83.0));
+  float S = min(0.42, 0.98 * ar / (max(uN, 1.0) * 0.56));
+  vec2 q = p / S;
+  float rq = length(q);
+  float ang = atan(q.y, q.x);
+  float epique = step(2.5, uTier);
+  float grand = step(1.5, uTier);
+  vec3 col = vec3(0.0);
+  // Fond doré qui respire.
+  col += vec3(0.5, 0.27, 0.04) * exp(-length(p) * 2.2) * 0.6;
+  // Rayons dorés qui tournent autour du centre (niveaux 2 et 3).
+  float rayons = pow(abs(cos(ang * 9.0 + uT * 0.5)), 14.0) * exp(-length(p) * 1.5);
+  col += vec3(1.0, 0.72, 0.2) * rayons * (0.28 * grand + 0.32 * epique);
+  // Épique : colonne de lumière qui monte du centre, lignes de vitesse, éclair de fond.
+  col += vec3(1.0, 0.8, 0.35) * epique * exp(-abs(p.x) * 9.0) * (0.4 + 0.3 * sin(uT * 8.0 + p.y * 6.0)) * 0.6;
+  float vit = fbm(vec2(ang * 11.0, length(p) * 2.0 - uT * 5.0));
+  col += vec3(1.0, 0.7, 0.25) * epique * pow(vit, 3.0) * smoothstep(0.2, 0.9, length(p)) * 0.9;
+  col += vec3(1.0, 0.85, 0.5) * uFlash * 0.4 * (0.5 + exp(-length(p) * 2.0));
+  // Les tau, l'un après l'autre.
+  float pitch = 0.56;
+  for (int i = 0; i < 5; i++) {
+    if (float(i) >= uN) break;
+    float lt = uT - (0.2 + float(i) * 0.28);
+    if (lt < 0.0) continue;
+    float k = smoothstep(0.0, 0.28, lt);
+    float s = 0.25 + 0.75 * k + 0.22 * sin(k * 3.14159);
+    vec2 c = vec2((float(i) - (uN - 1.0) * 0.5) * pitch, 0.0);
+    vec2 pp = (q - c) / s;
+    float d = tau(pp);
+    float dedans = smoothstep(0.012, -0.012, d);
+    // Or métallique : dégradé, reflet qui balaie la lettre, liseré clair.
+    vec3 or = mix(vec3(0.62, 0.36, 0.04), vec3(1.0, 0.82, 0.35), smoothstep(-0.25, 0.25, pp.y + 0.15 * sin(pp.x * 6.0)));
+    float reflet = smoothstep(0.1, 0.0, abs(pp.x * 0.8 + pp.y * 0.6 - (fract(lt * 0.7) * 2.2 - 1.1) * 0.5));
+    or += vec3(1.0, 0.95, 0.75) * reflet * 0.45 + vec3(1.0, 0.9, 0.6) * smoothstep(-0.03, 0.0, d) * 0.3;
+    col += vec3(1.0, 0.62, 0.1) * exp(-max(d, 0.0) * 14.0) * 0.45 * k + vec3(1.0, 0.7, 0.2) * exp(-length(pp) * 2.4) * 0.2 * k;
+    col = mix(col, or * 1.05, dedans * k);
+    // Onde de lumière à l'arrivée de chaque tau (niveaux 2 et 3), double en épique.
+    float r = length(q - c);
+    float o1 = (r - lt * 1.3) * 22.0;
+    float o2 = (r - (lt - 0.18) * 1.3) * 22.0;
+    col += vec3(1.0, 0.8, 0.35) * grand * (exp(-o1 * o1) * exp(-lt * 1.6) + epique * step(0.0, lt - 0.18) * exp(-o2 * o2) * exp(-(lt - 0.18) * 1.6)) * 0.9;
+  }
+  // Étincelles d'or : de plus en plus nombreuses selon le niveau.
+  col += particules(q * 0.55, uT, vec3(1.7, 1.1, 0.35), 0.1 + 0.18 * uTier + 0.25 * epique, 0.6 + 0.5 * uTier);
+  // Épique : traînée de lumière horizontale qui s'ouvre à chaque coup fort.
+  col += vec3(1.0, 0.85, 0.5) * epique * exp(-abs(p.y) * 38.0) * exp(-abs(p.x) * 1.4) * uFlash * 1.2;
+  float sombre = 0.58 + 0.3 * smoothstep(0.2, 1.1, length(p));
+  gl_FragColor = sortie(col, sombre);
+}
+`;

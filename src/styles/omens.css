@@ -76,3 +76,15 @@
   .omen-lid, .omen-pupil { transform: none; } /* œil ouvert */
   .omen-orb, .omen-halo, .omen-wood, .omen-rays { opacity: 1; transform: none; } /* cristal allumé */
 }
+
+/* ---------- Fête des runes de réussite : repli en dessins plats ---------- */
+.omen-tau { animation-duration: 1.8s; } /* niveau 1 : courte */
+.omen-tau.omen-tier2 { animation-duration: 2.8s; } /* niveau 2 */
+.omen-tau.omen-tier3 { animation-duration: 3.8s; } /* niveau 3 */
+.omen-tau .omen-glow { background: radial-gradient(ellipse at center, var(--omen-gold-deep) 0%, var(--omen-dark) 80%); } /* fond doré */
+.omen-tau .omen-figure { width: min(90vw, 70vh); } /* zone du dessin */
+.omen-tau-glyph { opacity: 0; transform-box: fill-box; transform-origin: center; animation: omen-tau-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; } /* chaque tau surgit en rebondissant */
+.omen-tau-line { fill: none; stroke: var(--omen-gold); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px var(--omen-fire)); } /* or lumineux */
+.omen-tier3 .omen-tau-line { filter: drop-shadow(0 0 14px var(--omen-gold)); } /* épique : plus de lumière */
+@keyframes omen-tau-pop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .omen-tau-glyph { opacity: 1; transform: none; } } /* image fixe */

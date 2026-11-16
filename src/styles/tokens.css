@@ -39,6 +39,7 @@
   --omen-blue: hsl(212 100% 56%); /* lumière de Gandalf */
   --omen-ice: hsl(200 100% 82%); /* cristal clair */
   --omen-white: hsl(200 100% 97%); /* cœur du cristal */
+  --omen-gold-deep: hsl(36 80% 20%); /* fond doré de la fête des runes */
   --omen-wood: hsl(32 28% 36%); /* bois du bâton */
 
   /* Polices (hébergées dans l'app, importées dans src/main.ts). */

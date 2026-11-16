@@ -1,16 +1,27 @@
 // Présages : quand l'Œil de Sauron ou la rune de Gandalf sort sur le dé du Destin, une courte scène plein écran s'anime, avec son.
 // Les dessins sont construits ici (éléments SVG) ; les mouvements et les couleurs sont dans src/styles/omens.css.
-import { playEyeSound, playGandalfSound, stopOmenSound } from '../audio/omenSound'; // sons
+import { playEyeSound, playGandalfSound, playTauSound, stopOmenSound } from '../audio/omenSound'; // sons
 import { OmenGL } from '../omen3d/OmenGL'; // rendu 3D (shaders)
+import { tauDuree } from '../omen3d/timeline'; // durée de la fête des tau
 import { fxLevel } from './prefs'; // niveau des effets
 
-export type OmenKind = 'eye' | 'gandalf'; // les deux présages
+export type OmenKind = 'eye' | 'gandalf' | 'tau'; // les présages et la fête des runes de réussite
+
+// Une scène à jouer : pour les tau, niveau (1 sympa, 2 grandiose, 3 épique) et nombre de tau dessinés.
+export interface Scene {
+  kind: OmenKind; // type de scène
+  tier?: number; // niveau de la fête (tau seulement)
+  n?: number; // nombre de tau (tau seulement)
+}
 
 const DUREE_MS = 2800; // durée de la scène animée
 const DUREE_FIXE_MS = 1800; // durée si l'appareil réduit les animations : image fixe, sans mouvement
 const NS = 'http://www.w3.org/2000/svg'; // espace de noms SVG
 
-let minuteur = 0; // minuteur de fermeture automatique
+let minuteur = 0; // minuteur de fin de scène
+let file: Scene[] = []; // scènes en attente (elles se jouent l'une après l'autre)
+let avecSon = false; // jouer le son des scènes suivantes ?
+let animReduite = false; // l'appareil réduit les animations ?
 
 // Crée un élément SVG avec ses attributs.
 function el(nom: string, attrs: Record<string, string> = {}, classe?: string): SVGElement {
@@ -69,6 +80,21 @@ function dessinBaton(): SVGElement {
   return svg;
 }
 
+
+// Dessin plat d'un tau d'or (repli sans 3D) : le nombre de tau suit le nombre de runes, chacun apparaît à son tour.
+function dessinTau(n: number): SVGElement {
+  const svg = el('svg', { viewBox: `0 0 ${n * 80} 100`, class: 'omen-svg omen-tau-svg', 'aria-hidden': 'true' });
+  for (let i = 0; i < n; i++) {
+    const g = el('g', { transform: `translate(${i * 80 + 10} 8)` }); // place le tau i
+    const trace = el('g', {}, 'omen-tau-glyph'); // groupe animé (le CSS le fait apparaître)
+    (trace as SVGElement & ElementCSSInlineStyle).style.animationDelay = `${0.2 + i * 0.28}s`; // chacun à son tour
+    trace.append(el('path', { d: 'M4 20 L56 20' }, 'omen-tau-line'), el('path', { d: 'M30 20 L30 62 Q30 80 46 78' }, 'omen-tau-line')); // barre et jambage
+    g.appendChild(trace);
+    svg.appendChild(g);
+  }
+  return svg;
+}
+
 let racine: HTMLElement | null = null; // calque des présages
 let canvas3d: HTMLCanvasElement | null = null; // canvas du rendu 3D (créé au premier besoin)
 let moteur: OmenGL | null | undefined; // moteur 3D (undefined = pas encore essayé, null = indisponible)
@@ -92,12 +118,12 @@ export function isOmenOpen(): boolean {
   return ouvert; // état courant
 }
 
-// Ferme tout de suite le présage (appui sur l'écran, bouton Retour, nouveau lancer).
-export function closeOmen(): void {
-  window.clearTimeout(minuteur); // annule la fermeture automatique
+// Efface la scène affichée (sans toucher à la file d'attente).
+function fermer(): void {
+  window.clearTimeout(minuteur); // annule la fin automatique
   moteur?.stop(); // arrête le rendu 3D
   stopOmenSound(); // coupe le son
-  ouvert = false; // plus de présage
+  ouvert = false; // plus de scène
   if (racine) {
     racine.hidden = true; // cache le calque
     racine.className = 'omen'; // retire les classes d'animation
@@ -105,48 +131,84 @@ export function closeOmen(): void {
   }
 }
 
+// Ferme tout de suite et annule les scènes en attente (appui sur l'écran, bouton Retour, nouveau lancer).
+export function closeOmen(): void {
+  file = []; // plus rien à enchaîner
+  fermer(); // efface la scène
+}
+
 // Tente de jouer la scène en 3D (shaders). Rend false si l'appareil ne sait pas (les dessins plats prennent le relais).
-function jouer3d(kind: OmenKind): boolean {
+function jouer3d(sc: Scene): boolean {
   if (!racine) return false; // pas initialisé
   if (!canvas3d) {
     canvas3d = document.createElement('canvas'); // canvas du rendu
     canvas3d.className = 'omen-canvas'; // style
   }
-  racine.className = `omen omen-gl omen-${kind}`; // calque en mode 3D
+  racine.className = `omen omen-gl omen-${sc.kind}`; // calque en mode 3D
   racine.appendChild(canvas3d); // le canvas doit être dans la page pour avoir une taille
   if (moteur === undefined) moteur = OmenGL.create(canvas3d); // crée le moteur une seule fois
-  if (moteur && moteur.start(kind, fxLevel())) return true; // la scène tourne
+  if (moteur && moteur.start(sc.kind, fxLevel(), { tier: sc.tier ?? 1, n: sc.n ?? 1 })) return true; // la scène tourne
   racine.replaceChildren(); // échec : retire le canvas
   return false; // repli
 }
 
-// Joue un présage. sound = jouer le son ? reduit = l'appareil réduit les animations (image fixe).
-export function playOmen(kind: OmenKind, sound: boolean, reduit: boolean): void {
-  if (!racine) return; // pas initialisé
-  closeOmen(); // un seul présage à la fois
-  racine.replaceChildren(); // repart d'un calque vide
-  if (!reduit && fxLevel() !== 'off' && jouer3d(kind)) {
-    racine.hidden = false; // montre le calque
-    ouvert = true; // un présage est affiché
-    if (sound) (kind === 'eye' ? playEyeSound : playGandalfSound)(); // le son qui va avec
-    minuteur = window.setTimeout(closeOmen, DUREE_MS); // ferme à la fin de la scène
-    return; // la scène 3D tourne : rien d'autre à faire
+// Durée d'une scène en millisecondes.
+function dureeMs(sc: Scene): number {
+  if (animReduite) return DUREE_FIXE_MS; // image fixe : courte
+  return sc.kind === 'tau' ? tauDuree(sc.tier ?? 1) * 1000 : DUREE_MS; // fête : selon le niveau
+}
+
+// Joue la scène suivante de la file, ou ferme s'il n'y en a plus.
+function suivante(): void {
+  const sc = file.shift(); // prochaine scène
+  if (!sc || !racine) {
+    fermer(); // fini
+    return;
   }
-  racine.className = `omen omen-${kind}${reduit ? ' omen-fixe' : ''}`; // repli : dessins plats (classes : type et mode)
-  const lueur = document.createElement('div'); // lueur de fond (rouge ou bleue)
+  fermer(); // efface la scène précédente
+  const son = () => {
+    if (!avecSon) return; // son coupé
+    if (sc.kind === 'eye') playEyeSound(); // l'Œil
+    else if (sc.kind === 'gandalf') playGandalfSound(); // le bâton
+    else playTauSound(sc.tier ?? 1, sc.n ?? 1); // la fête des tau
+  };
+  const fin = window.setTimeout(suivante, dureeMs(sc)); // fin de la scène, puis la suivante
+  if (!animReduite && fxLevel() !== 'off' && jouer3d(sc)) {
+    racine.hidden = false; // montre le calque
+    ouvert = true; // une scène est affichée
+    son(); // le son qui va avec
+    minuteur = fin; // mémorise pour pouvoir annuler
+    return; // la scène 3D tourne
+  }
+  racine.className = `omen omen-${sc.kind}${animReduite ? ' omen-fixe' : ''}${sc.kind === 'tau' ? ` omen-tier${sc.tier ?? 1}` : ''}`; // repli : dessins plats
+  const lueur = document.createElement('div'); // lueur de fond
   lueur.className = 'omen-glow'; // style
   const figure = document.createElement('div'); // zone du dessin
   figure.className = 'omen-figure'; // style
-  figure.appendChild(kind === 'eye' ? dessinOeil() : dessinBaton()); // le dessin
+  figure.appendChild(sc.kind === 'eye' ? dessinOeil() : sc.kind === 'gandalf' ? dessinBaton() : dessinTau(sc.n ?? 1)); // le dessin
   racine.append(lueur, figure); // assemble
-  if (kind === 'gandalf') for (const s of sparks()) racine.appendChild(s); // étincelles
+  if (sc.kind === 'gandalf') for (const sp of sparks()) racine.appendChild(sp); // étincelles
   racine.hidden = false; // montre
-  ouvert = true; // un présage est affiché
-  if (sound) (kind === 'eye' ? playEyeSound : playGandalfSound)(); // le son qui va avec
-  minuteur = window.setTimeout(closeOmen, reduit ? DUREE_FIXE_MS : DUREE_MS); // ferme à la fin de la scène
+  ouvert = true; // une scène est affichée
+  son(); // le son
+  minuteur = fin; // mémorise
 }
 
-// Branche le calque : un appui n'importe où ferme le présage.
+// Joue une ou plusieurs scènes l'une après l'autre. sound = jouer le son ? reduit = l'appareil réduit les animations (image fixe).
+export function playOmens(scenes: Scene[], sound: boolean, reduit: boolean): void {
+  if (!racine || scenes.length === 0) return; // rien à jouer
+  file = scenes.slice(); // la file
+  avecSon = sound; // son ou non
+  animReduite = reduit; // animations réduites ou non
+  suivante(); // lance la première
+}
+
+// Joue un seul présage (raccourci).
+export function playOmen(kind: OmenKind, sound: boolean, reduit: boolean): void {
+  playOmens([{ kind }], sound, reduit); // une scène
+}
+
+// Branche le calque : un appui n'importe où ferme tout.
 export function initOmens(): void {
   racine = document.getElementById('omen'); // le calque (dans index.html)
   racine?.addEventListener('click', closeOmen); // un appui ferme

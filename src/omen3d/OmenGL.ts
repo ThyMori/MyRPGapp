@@ -1,10 +1,16 @@
 // Moteur d'affichage des présages : un canvas WebGL plein écran qui joue le programme graphique de l'Œil ou du bâton.
 // Pas de bibliothèque : un rectangle, deux programmes, des « uniforms » mis à jour à chaque image d'après timeline.ts.
-import { EYE_FRAG, GANDALF_FRAG, VERTEX } from './shaders'; // programmes graphiques
+import { EYE_FRAG, GANDALF_FRAG, TAU_FRAG, VERTEX } from './shaders'; // programmes graphiques
 import { lower, startQuality, type Fx, type Quality } from './quality'; // niveau de qualité
-import { DUREE_S, eyeState, gandalfState } from './timeline'; // chronologie
+import { DUREE_S, eyeState, gandalfState, tauDuree, tauState } from './timeline'; // chronologie
 
-export type OmenGlKind = 'eye' | 'gandalf'; // les deux scènes
+export type OmenGlKind = 'eye' | 'gandalf' | 'tau'; // les trois scènes
+
+// Réglages propres à la fête des tau : niveau (1 à 3) et nombre de tau affichés.
+export interface TauExtra {
+  tier: number; // 1 sympa, 2 grandiose, 3 épique
+  n: number; // nombre de tau dessinés
+}
 
 // Un programme compilé avec ses emplacements de variables.
 interface Prog {
@@ -56,7 +62,7 @@ export class OmenGL {
       return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; // null si erreur de compilation
     };
     const vs = sh(gl.VERTEX_SHADER, VERTEX); // sommet
-    const fs = sh(gl.FRAGMENT_SHADER, kind === 'eye' ? EYE_FRAG : GANDALF_FRAG); // pixels
+    const fs = sh(gl.FRAGMENT_SHADER, kind === 'eye' ? EYE_FRAG : kind === 'tau' ? TAU_FRAG : GANDALF_FRAG); // pixels
     if (!vs || !fs) return null; // échec
     const prog = gl.createProgram(); // programme
     if (!prog) return null; // échec
@@ -65,7 +71,7 @@ export class OmenGL {
     gl.bindAttribLocation(prog, 0, 'aPos'); // position en emplacement 0
     gl.linkProgram(prog); // assemble
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null; // échec
-    const noms = ['uRes', 'uT', 'uFade', 'uOct', 'uOpen', 'uPupilX', 'uDilate', 'uPulse', 'uShake', 'uFlash', 'uRise', 'uIgnite', 'uRing']; // variables possibles
+    const noms = ['uRes', 'uT', 'uFade', 'uOct', 'uOpen', 'uPupilX', 'uDilate', 'uPulse', 'uShake', 'uFlash', 'uRise', 'uIgnite', 'uRing', 'uTier', 'uN']; // variables possibles
     const loc: Record<string, WebGLUniformLocation | null> = {}; // emplacements
     for (const n of noms) loc[n] = gl.getUniformLocation(prog, n); // cherche chacun (null si absent du programme)
     return (this.progs[kind] = { prog, loc }); // mémorise
@@ -82,7 +88,7 @@ export class OmenGL {
   }
 
   // Lance une scène. Rend false si elle ne peut pas être dessinée (l'appelant se rabat sur les dessins plats).
-  start(kind: OmenGlKind, fx: Fx): boolean {
+  start(kind: OmenGlKind, fx: Fx, extra: TauExtra = { tier: 1, n: 1 }): boolean {
     this.stop(); // une seule scène à la fois
     if (this.perdu || fx === 'off') return false; // pas de 3D
     const p = this.compiler(kind); // programme
@@ -91,6 +97,7 @@ export class OmenGL {
     this.dts = []; // repart de zéro
     this.t0 = performance.now(); // instant de départ
     this.derniere = this.t0; // dernière image
+    const duree = kind === 'tau' ? tauDuree(extra.tier) : DUREE_S; // durée de cette scène
     const gl = this.gl; // raccourci
     gl.useProgram(p.prog); // programme actif
     gl.enableVertexAttribArray(0); // attribut de position
@@ -98,7 +105,7 @@ export class OmenGL {
     gl.disable(gl.DEPTH_TEST); // pas de profondeur
     const image = (now: number) => {
       if (this.perdu) return; // contexte perdu : on s'arrête
-      const t = Math.min((now - this.t0) / 1000, DUREE_S); // temps de la scène
+      const t = Math.min((now - this.t0) / 1000, duree); // temps de la scène
       this.surveiller(now); // baisse la qualité si ça rame
       this.redimensionner(); // taille du canvas
       gl.viewport(0, 0, this.canvas.width, this.canvas.height); // zone de dessin
@@ -117,6 +124,13 @@ export class OmenGL {
         gl.uniform1f(L.uPulse, s.pulse); // battement
         gl.uniform1f(L.uShake, s.shake); // tremblement
         gl.uniform1f(L.uFlash, s.flash); // éclair
+      } else if (kind === 'tau') {
+        const s = tauState(t, extra.tier, extra.n); // état de la fête à cet instant
+        gl.uniform1f(L.uFade, s.fade); // opacité
+        gl.uniform1f(L.uShake, s.shake); // tremblement
+        gl.uniform1f(L.uFlash, s.flash); // éclair
+        gl.uniform1f(L.uTier, extra.tier); // niveau de la fête
+        gl.uniform1f(L.uN, extra.n); // nombre de tau
       } else {
         const s = gandalfState(t); // état du bâton à cet instant
         gl.uniform1f(L.uFade, s.fade); // opacité
@@ -126,7 +140,7 @@ export class OmenGL {
         gl.uniform1f(L.uRing, s.ring); // onde
       }
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); // dessine le rectangle
-      if (t < DUREE_S) this.raf = requestAnimationFrame(image); // image suivante
+      if (t < duree) this.raf = requestAnimationFrame(image); // image suivante
     };
     this.raf = requestAnimationFrame(image); // première image
     return true; // la scène tourne
