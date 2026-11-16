@@ -1,13 +1,6 @@
-# Réglages de publication sur Netlify : lus automatiquement à chaque déploiement.
-# Ainsi rien n'est à régler à la main dans l'interface, et tout est versionné avec le code.
-
+# Netlify est MIS EN PAUSE (0.6.2) : le site est publié par GitHub Pages (.github/workflows/pages.yml).
+# Cette commande « ignore » annule tout build Netlify (code de sortie 0 = ne pas construire), pour ne plus consommer de crédits
+# tant que le site Netlify n'est pas supprimé ou déconnecté du dépôt. Pour reprendre Netlify : supprimer ce fichier et
+# remettre l'ancien netlify.toml (voir l'historique git, version 0.6.1).
 [build]
-  # Vérifie les numéros de version, lance les tests, puis contrôle les types et construit le site.
-  # Si une étape échoue, rien n'est publié : la version précédente reste en ligne.
-  command = "node scripts/bump-version.mjs --check && npm test && npm run build"
-  # Dossier produit par Vite, envoyé tel quel sur le réseau de Netlify.
-  publish = "dist"
-
-[build.environment]
-  # Version de Node utilisée pour construire : Vite 8 en demande une récente.
-  NODE_VERSION = "22"
+  ignore = "exit 0"

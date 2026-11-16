@@ -3,7 +3,7 @@
 App de jeu de rôle (PWA) : dés 3D, fiches, oracles. Cercle privé, données sur l'appareil. Dépôt public : pas de texte de règles copié.
 
 ## Pile
-TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hébergées. Hébergement : Netlify (`netlify.toml`, build = contrôle de version + tests + build), domaine myrpgapp.thierry-morin.com par CNAME chez Squarespace. GitHub Pages abandonné (conditions d'usage), Cloudflare écarté (domaine à déplacer chez eux). Détails dans le README. Pas de base de données.
+TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hébergées. Hébergement : GitHub Pages en mode « GitHub Actions » (`.github/workflows/pages.yml` = contrôle de version + tests + build), domaine myrpgapp.thierry-morin.com par CNAME vers thymori.github.io chez Squarespace (`public/CNAME`). Netlify en pause (crédits trop vite consommés ; `netlify.toml` annule les builds), Cloudflare écarté (domaine à déplacer chez eux). Détails dans le README. Pas de base de données.
 
 ## Conventions
 - Textes en français, tutoiement. Chaque ligne de code commentée en français.
@@ -18,7 +18,7 @@ TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hé
 Dé du Destin, Dés de Maîtrise, Épuisé, Mélancolique, Œil de Sauron, Rune de Gandalf, Favorisé / Défavorisé, SR (seuil de réussite). À confirmer avec le livre.
 
 ## Versions
-x.y.z, incrémenté à chaque livraison avec `node scripts/bump-version.mjs patch|minor|major "notes"` (jamais à la main). `--check` avant le commit. La commande de build de Netlify le vérifie aussi.
+x.y.z, incrémenté à chaque livraison avec `node scripts/bump-version.mjs patch|minor|major "notes"` (jamais à la main). `--check` avant le commit. Le workflow GitHub Pages le vérifie aussi.
 
 ## Ergonomie (référence ThyChat)
 Tiroir latéral, bouton Retour géré, dernier écran rouvert, menu ⋮ sur téléphone, dialogues natifs, un seul message (toast), aide « i » à jour à chaque fonction, filet de démarrage 8 s.

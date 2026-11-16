@@ -16,14 +16,14 @@ npm test           # lance les tests
 npm run build      # contrôle de types + construction dans dist/
 ```
 
-## Mise en ligne (Netlify, depuis 0.2.3)
+## Mise en ligne (GitHub Pages, depuis 0.6.2)
 
-1. Netlify (https://app.netlify.com) : site `myrpgapp` relié au dépôt `ThyMori/MyRPGapp`, redéployé à chaque push sur `main`.
-2. Les réglages sont dans `netlify.toml` : vérification des versions, tests, puis `npm run build` ; dossier publié `dist` ; Node 22. Si un test échoue, rien n'est publié et la version précédente reste en ligne.
-3. Domaine : Netlify → Domain management → `myrpgapp.thierry-morin.com`, certificat HTTPS automatique.
-4. Squarespace (Domaines → thierry-morin.com → Paramètres DNS) : CNAME hôte `myrpgapp` vers l'adresse `…netlify.app` du site, plus un TXT `subdomain-owner-verification` (preuve de propriété demandée par Netlify, à laisser en place).
-5. Aperçus : chaque branche ou demande de fusion a sa propre adresse de test (Netlify → Deploys).
-6. Retour arrière : Netlify → Deploys → choisir un ancien déploiement → Publish deploy.
+1. GitHub → dépôt `ThyMori/MyRPGapp` → Settings → Pages → **Source : « GitHub Actions »** (https://github.com/ThyMori/MyRPGapp/settings/pages).
+2. Le workflow `.github/workflows/pages.yml` se lance à chaque push sur `main` : vérification des versions, tests, `npm run build`, puis publication du dossier `dist`. Si une étape échoue, rien n'est publié et la version précédente reste en ligne (suivi : onglet Actions).
+3. Domaine : même page Pages → « Custom domain » `myrpgapp.thierry-morin.com` (le fichier `public/CNAME` le rappelle), puis cocher **Enforce HTTPS** quand le certificat est prêt.
+4. Squarespace (Domaines → thierry-morin.com → Paramètres DNS) : CNAME hôte `myrpgapp` vers `thymori.github.io`. Retirer l'ancien CNAME vers `…netlify.app` et le TXT `subdomain-owner-verification` de Netlify.
+5. Retour arrière : onglet Actions → ouvrir un ancien déploiement réussi → Re-run all jobs.
+6. Netlify est **en pause** : `netlify.toml` ne contient plus qu'une commande `ignore` qui annule tout build (aucun crédit consommé). Pour s'en passer complètement : supprimer le site dans Netlify.
 
 Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
@@ -31,12 +31,14 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 - **GitHub Pages** (jusqu'à 0.2.2) : abandonné, ses conditions excluent l'usage commercial. Pour y revenir : recréer un workflow de publication, CNAME vers `thymori.github.io`, Settings → Pages. Le fichier `public/CNAME` a été supprimé en 0.2.4.
 - **Cloudflare** (essai 0.2.1) : la publication marche (`wrangler.jsonc` publie `dist`, son `name` doit rester identique au projet), mais le domaine ne peut pas y être relié sans déplacer tout `thierry-morin.com` chez Cloudflare (message « No zones match »). Non retenu : le projet Cloudflare et `wrangler.jsonc` ont été supprimés en 0.2.4.
-- **Netlify** (essai 0.2.2) : retenu, un simple CNAME chez Squarespace suffit. Offre gratuite à quota mensuel de crédits : vérifier la page de tarifs avant tout usage pro.
+- **Netlify** (0.2.2 à 0.6.1) : un simple CNAME chez Squarespace suffit, mais l'offre gratuite a un quota mensuel de crédits, vite consommé (chaque push = un build). Mis en pause en 0.6.2.
+- **GitHub Pages** (retour en 0.6.2) : coût nul et prévisible. Ses conditions d'usage excluent l'usage commercial : sans objet pour un cercle privé, à revoir si l'app devient payante.
 
 ## Fonctions livrées
 
 | Version | Fonction |
 |---|---|
+| 0.6.2 | Retour sur GitHub Pages (workflow `pages.yml` + `public/CNAME`), Netlify mis en pause (`netlify.toml` annule les builds) ; aucun changement dans l'app |
 | 0.6.0 | Dés annulés par l'état Épuisé : ils se flétrissent (ternis, recroquevillés, lueur rouge à chaque battement) avec un battement de cœur qui faiblit |
 | 0.5.0 | Fête des runes de réussite (τ) sur un jet réussi : 1 rune = sympa (1,8 s), 2 = grandiose (2,8 s), 3 ou plus = épique (3,8 s), en 3D avec son ; jouée après un éventuel présage ; repli en dessins plats |
 | 0.4.0 | Présages en rendu 3D (shaders WebGL) : Œil de feu avec flammes, braises, battements, tremblement au cor ; bâton de Gandalf avec cristal rayonnant, onde de lumière, poussière d'étoiles ; réglage « Effets des présages » (élevés / réduits / simples), baisse automatique si l'appareil rame |
