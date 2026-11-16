@@ -1,7 +1,6 @@
 // Présages : quand l'Œil de Sauron ou la rune de Gandalf sort sur le dé du Destin, une courte scène plein écran s'anime, avec son.
 // Les dessins sont construits ici (éléments SVG) ; les mouvements et les couleurs sont dans src/styles/omens.css.
 import { playEyeSound, playGandalfSound, playTauSound, stopOmenSound } from '../audio/omenSound'; // sons
-import { playVerdictSound } from '../audio/verdictSound'; // sons de l'annonce Réussite / Échec
 import { buildVerdict } from './verdict'; // décor de l'annonce
 import { OmenGL } from '../omen3d/OmenGL'; // rendu 3D (shaders)
 import { tauDuree } from '../omen3d/timeline'; // durée de la fête des tau
@@ -184,7 +183,6 @@ function suivante(): void {
     racine.appendChild(buildVerdict(sc.win === true, sc.sous ?? '')); // le décor
     racine.hidden = false; // montre
     ouvert = true; // une scène est affichée
-    if (avecSon) playVerdictSound(sc.win === true); // la fanfare ou la chute
     minuteur = window.setTimeout(suivante, dureeMs(sc)); // fin de l'annonce
     return;
   }

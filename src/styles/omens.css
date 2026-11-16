@@ -89,36 +89,12 @@
 @keyframes omen-tau-pop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .omen-tau-glyph { opacity: 1; transform: none; } } /* image fixe */
 
-/* ---------- Annonce Réussite / Échec : arcade de fantasy héroïque (vieux jeux de donjons) ---------- */
-.omen-verdict { background: var(--fantasy-dim); animation-duration: 2.4s; cursor: pointer; } /* voile sombre, fondu sur 2,4 s */
-.omen-verdict::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: var(--fantasy-flash); animation: arc-flash 0.6s ease-out 0.3s both; } /* éclair de couleur à l'impact */
-.omen-verdict::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, hsl(0 0% 0% / 0.22) 0 2px, transparent 2px 4px); } /* lignes de balayage d'un vieil écran */
-.omen-verdict:has(.arc-win) { --fantasy-flash: radial-gradient(circle at 50% 50%, var(--fantasy-gold-hi), transparent 70%); } /* éclair doré */
-.omen-verdict:has(.arc-lose) { --fantasy-flash: radial-gradient(circle at 50% 50%, var(--fantasy-blood), transparent 70%); } /* éclair sanglant */
-.arc-box { position: relative; width: min(94vw, 34rem); padding: 1.1rem 0.8rem 1rem; text-align: center; font-family: 'Jacquard 24', serif; image-rendering: pixelated; animation: arc-drop 0.55s cubic-bezier(0.2, 1.3, 0.4, 1) both, arc-shake 0.4s linear 0.45s; } /* bannière qui s'écrase du haut, puis tremble */
-.arc-win { background: linear-gradient(180deg, var(--fantasy-win-a), var(--fantasy-win-b)); box-shadow: inset 0 0 0 3px var(--fantasy-edge), inset 0 0 0 7px var(--fantasy-gold), inset 0 0 0 10px var(--fantasy-edge), 0 0 0 4px var(--fantasy-edge), 0 10px 0 var(--fantasy-edge); } /* pierre rouge sombre cerclée d'or */
-.arc-lose { background: linear-gradient(180deg, var(--fantasy-lose-a), var(--fantasy-lose-b)); box-shadow: inset 0 0 0 3px var(--fantasy-edge), inset 0 0 0 7px var(--fantasy-iron), inset 0 0 0 10px var(--fantasy-edge), 0 0 0 4px var(--fantasy-edge), 0 10px 0 var(--fantasy-edge); } /* pierre noire cerclée de fer */
-.arc-rivet { position: absolute; width: 0.8rem; height: 0.8rem; background: var(--fantasy-gold); box-shadow: 0 0 0 2px var(--fantasy-edge); } /* rivets aux coins */
-.arc-lose .arc-rivet { background: var(--fantasy-iron); }
-.arc-hg { top: 0.5rem; left: 0.5rem; } .arc-hd { top: 0.5rem; right: 0.5rem; } .arc-bg { bottom: 0.5rem; left: 0.5rem; } .arc-bd { bottom: 0.5rem; right: 0.5rem; }
-.arc-icon { display: block; width: 4.2rem; height: auto; margin: 0 auto 0.2rem; animation: arc-pop 0.4s steps(4) 0.35s both; } /* couronne ou crâne en pixels */
-.arc-px { fill: var(--fantasy-gold); } .arc-px-hi { fill: var(--fantasy-gold-hi); } /* couronne dorée avec reflet */
-.arc-lose .arc-px { fill: var(--fantasy-bone); } .arc-lose .arc-px-hi { fill: var(--fantasy-white); } /* crâne d'os */
-.arc-word { display: flex; justify-content: center; font-size: min(16vw, 6.5rem); line-height: 1; white-space: nowrap; letter-spacing: 0.02em; } /* le mot en gothique pixel */
-.arc-letter { display: inline-block; background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-fill-color: transparent; filter: drop-shadow(0.04em 0.05em 0 var(--fantasy-edge)) drop-shadow(-0.02em -0.02em 0 var(--fantasy-edge)) drop-shadow(0.02em -0.02em 0 var(--fantasy-edge)) drop-shadow(-0.02em 0.03em 0 var(--fantasy-edge)); animation: arc-shine 0.5s steps(5) both; } /* lettre avec reflet qui passe */
-.arc-win .arc-letter { background-image: linear-gradient(180deg, var(--fantasy-gold-hi) 0 28%, var(--fantasy-gold) 28% 60%, var(--fantasy-bronze) 60% 100%); } /* or biseauté */
-.arc-lose .arc-letter { background-image: linear-gradient(180deg, var(--fantasy-bone) 0 26%, var(--fantasy-blood) 26% 62%, var(--fantasy-blood-deep) 62% 100%); animation: arc-shine 0.5s steps(5) both, arc-sag 1.4s ease-in 0.9s both; } /* os et sang, lettres qui s'affaissent */
-.arc-rule { height: 0.5rem; margin: 0.5rem auto 0.4rem; width: 70%; background: linear-gradient(90deg, transparent, var(--fantasy-gold) 18%, var(--fantasy-gold) 82%, transparent); box-shadow: 0 0 0 2px var(--fantasy-edge); clip-path: polygon(0 50%, 6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%); } /* filet orné en losange */
-.arc-lose .arc-rule { background: linear-gradient(90deg, transparent, var(--fantasy-iron) 18%, var(--fantasy-iron) 82%, transparent); }
-.arc-sub { font-size: min(7vw, 2.2rem); color: var(--fantasy-gold-hi); text-shadow: 0.06em 0.08em 0 var(--fantasy-edge); letter-spacing: 0.06em; animation: arc-blink 0.5s steps(2, jump-none) 4; } /* niveau de réussite */
-.arc-ember { position: absolute; bottom: 0.4rem; width: var(--taille); height: var(--taille); background: var(--fantasy-gold-hi); box-shadow: 0 0 0 2px var(--fantasy-fire); opacity: 0; animation: arc-ember 1.6s steps(8) forwards; } /* braise carrée qui monte */
-.arc-lose .arc-ember { background: var(--fantasy-fel); box-shadow: 0 0 0 2px var(--fantasy-fel-deep); } /* braises vertes de l'orc */
-@keyframes arc-drop { from { transform: translateY(-120vh); } to { transform: translateY(0); } } /* chute de la bannière */
-@keyframes arc-flash { from { opacity: 0.9; } to { opacity: 0; } } /* l'éclair s'éteint */
-@keyframes arc-shake { 0%, 100% { translate: 0 0; } 20% { translate: -5px 4px; } 40% { translate: 5px -3px; } 60% { translate: -3px -4px; } 80% { translate: 3px 3px; } } /* tremblement */
-@keyframes arc-pop { from { transform: scale(0); } to { transform: scale(1); } } /* l'icône apparaît par paliers */
-@keyframes arc-shine { 0% { filter: brightness(2.4) drop-shadow(0.04em 0.05em 0 var(--fantasy-edge)); } 100% { filter: brightness(1) drop-shadow(0.04em 0.05em 0 var(--fantasy-edge)); } } /* reflet qui retombe */
-@keyframes arc-sag { from { transform: translateY(0) rotate(0); } to { transform: translateY(0.07em) rotate(2deg); } } /* affaissement léger */
-@keyframes arc-blink { 0% { opacity: 1; } 100% { opacity: 0.45; } } /* clignotement du sous-titre */
-@keyframes arc-ember { 0% { opacity: 0; transform: translateY(0); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-9rem); } } /* la braise monte et s'éteint */
-@media (prefers-reduced-motion: reduce) { .arc-box, .arc-icon, .arc-letter, .arc-sub, .arc-ember, .omen-verdict::before { animation: none !important; } .arc-ember { display: none; } } /* image fixe */
+/* ---------- Annonce Réussite / Échec : bande sobre, sans bruit ---------- */
+.omen-verdict { background: var(--verdict-dim); animation-duration: 2.4s; cursor: pointer; } /* voile léger, fondu sur 2,4 s */
+.verdict-box { width: 100%; padding: 1.2rem 1rem; text-align: center; background: var(--verdict-band); border-block: 2px solid var(--verdict-accent); animation: verdict-in 0.35s ease-out both; } /* bande centrale bordée d'un filet */
+.verdict-win { --verdict-accent: var(--verdict-win); } /* or */
+.verdict-lose { --verdict-accent: var(--verdict-lose); } /* rouge sourd */
+.verdict-word { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: min(13vw, 5rem); line-height: 1.1; text-transform: uppercase; letter-spacing: 0.16em; padding-left: 0.16em; color: var(--verdict-accent); } /* le mot, lisible */
+.verdict-sub { margin-top: 0.4rem; font-family: 'Source Sans 3', sans-serif; font-weight: 600; font-size: min(4vw, 1.1rem); letter-spacing: 0.14em; text-transform: uppercase; color: var(--text); opacity: 0.85; } /* niveau de réussite */
+@keyframes verdict-in { from { opacity: 0; transform: scale(1.05); } to { opacity: 1; transform: scale(1); } } /* apparition douce */
+@media (prefers-reduced-motion: reduce) { .verdict-box { animation: none; } } /* image fixe */
