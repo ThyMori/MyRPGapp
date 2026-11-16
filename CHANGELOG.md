@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.8.0 — 2026-11-16
+- Annonce arcade fantasy, immédiate, avec voix synthétisée elfique et orque
+
 ## 0.7.0 — 2026-11-16
 - Annonce Réussite / Échec façon arcade 80's
 

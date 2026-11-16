@@ -1,7 +1,7 @@
 {
   "name": "myrpgapp",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@fontsource/cormorant-garamond": "^5.3.0",
-    "@fontsource/press-start-2p": "^5.3.0",
+    "@fontsource/jacquard-24": "^5.3.0",
     "@fontsource/source-sans-3": "^5.3.1",
     "three": "^0.187.0"
   },

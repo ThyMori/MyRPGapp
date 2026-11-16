@@ -40,16 +40,24 @@
   --omen-ice: hsl(200 100% 82%); /* cristal clair */
   --omen-white: hsl(200 100% 97%); /* cœur du cristal */
   --omen-gold-deep: hsl(36 80% 20%); /* fond doré de la fête des runes */
-  /* Annonce Réussite / Échec façon arcade 80's. */
-  --arcade-win-a: hsl(52 100% 62%); /* haut des lettres de réussite : jaune */
-  --arcade-win-b: hsl(14 100% 52%); /* bas des lettres de réussite : orange rouge */
-  --arcade-lose-a: hsl(350 90% 66%); /* haut des lettres d'échec : rose rouge */
-  --arcade-lose-b: hsl(285 70% 34%); /* bas des lettres d'échec : violet */
-  --arcade-edge: hsl(250 60% 8%); /* contour sombre des lettres */
-  --arcade-white: hsl(0 0% 100%); /* reflet chromé */
-  --arcade-pink: hsl(320 100% 62%); /* néon rose */
-  --arcade-cyan: hsl(185 100% 58%); /* néon cyan */
-  --arcade-dim: hsl(250 50% 6% / 0.5); /* voile sombre derrière l'annonce */
+  /* Annonce Réussite / Échec : arcade de fantasy héroïque. */
+  --fantasy-gold-hi: hsl(50 100% 78%); /* reflet de l'or */
+  --fantasy-gold: hsl(42 92% 52%); /* or */
+  --fantasy-bronze: hsl(26 75% 30%); /* bas des lettres d'or */
+  --fantasy-fire: hsl(20 100% 50%); /* bord des braises */
+  --fantasy-win-a: hsl(355 62% 28%); /* haut de la bannière de victoire : rouge sombre */
+  --fantasy-win-b: hsl(350 55% 14%); /* bas de la bannière de victoire */
+  --fantasy-lose-a: hsl(230 12% 18%); /* haut de la bannière de défaite : pierre noire */
+  --fantasy-lose-b: hsl(230 15% 8%); /* bas de la bannière de défaite */
+  --fantasy-iron: hsl(215 10% 42%); /* cadre de fer */
+  --fantasy-bone: hsl(45 22% 80%); /* os */
+  --fantasy-white: hsl(45 40% 94%); /* reflet de l'os */
+  --fantasy-blood: hsl(0 78% 40%); /* sang */
+  --fantasy-blood-deep: hsl(0 80% 18%); /* sang sombre */
+  --fantasy-fel: hsl(110 75% 52%); /* braises vertes */
+  --fantasy-fel-deep: hsl(120 70% 20%); /* bord des braises vertes */
+  --fantasy-edge: hsl(240 35% 6%); /* contour sombre */
+  --fantasy-dim: hsl(240 40% 5% / 0.55); /* voile sombre derrière l'annonce */
   --omen-wood: hsl(32 28% 36%); /* bois du bâton */
 
   /* Polices (hébergées dans l'app, importées dans src/main.ts). */

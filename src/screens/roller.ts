@@ -11,7 +11,7 @@ import { loadJson, saveJson } from '../state/storage'; // mémoire locale
 import { all, byId } from '../ui/dom'; // recherche d'éléments
 import { tauShown, tauTier } from '../omen3d/tier'; // niveau de la fête des runes de réussite
 import { closeOmen, dureeMs, playOmens, type Scene } from '../ui/omens'; // scènes de présage
-import { planVerdict } from '../ui/verdictPlan'; // calendrier de l'annonce Réussite / Échec
+import { planHold } from '../ui/verdictPlan'; // calendrier de l'annonce Réussite / Échec
 import { initPrefs, soundEnabled, verdictEnabled } from '../ui/prefs'; // couleur des dés et son
 import { showToast } from '../ui/toast'; // messages
 import { VOCAB } from '../vocab'; // vocabulaire du jeu
@@ -209,19 +209,13 @@ function doRoll(): void {
     history = [{ id: newId(), ts: Date.now(), input: reglages, outcome }, ...history].slice(0, HISTORY_MAX); // ajoute à l'historique
     if (!saveJson('history', history)) showToast("Impossible de sauvegarder l'historique sur cet appareil.", 'error'); // prévient si le stockage est bloqué
     renderHistory(); // redessine
+    const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches; // animations réduites ?
     const scenes: Scene[] = []; // scènes à jouer, dans l'ordre
+    if (verdictEnabled()) scenes.push({ kind: 'verdict', win: outcome.success, sous: outcome.success ? (outcome.level === 'extraordinaire' ? 'EXTRAORDINAIRE' : outcome.level === 'grande' ? 'GRANDE RÉUSSITE' : '') : '' }); // l'annonce vient en premier, dès que les dés sont immobiles
     if (outcome.eye || outcome.gandalf) scenes.push({ kind: outcome.eye ? 'eye' : 'gandalf' }); // présage : seulement pour le dé du Destin gardé
     const tier = tauTier(outcome.runes, outcome.success); // fête des runes de réussite : 1 sympa, 2 grandiose, 3 épique
     if (tier > 0) scenes.push({ kind: 'tau', tier, n: tauShown(outcome.runes) }); // après le présage s'il y en a un
-    const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches; // animations réduites ?
-    if (verdictEnabled()) {
-      const base = stage?.plannedHold() ?? 0; // durée normale pendant laquelle les dés restent
-      const somme = scenes.reduce((a, s) => a + dureeMs(s, reduit), 0); // durée des scènes déjà prévues
-      const plan = planVerdict(somme, base); // l'annonce vient quand les dés commencent à s'effacer
-      stage?.holdFor(plan.holdMs); // les dés restent jusque-là
-      if (plan.pauseMs > 0) scenes.push({ kind: 'pause', ms: plan.pauseMs }); // attente éventuelle
-      scenes.push({ kind: 'verdict', win: outcome.success, sous: outcome.success ? (outcome.level === 'extraordinaire' ? 'EXTRAORDINAIRE' : outcome.level === 'grande' ? 'GRANDE RÉUSSITE' : '') : '' }); // l'annonce
-    }
+    if (scenes.length > 0 && stage) stage.holdFor(planHold(scenes.reduce((a, s) => a + dureeMs(s, reduit), 0), stage.plannedHold())); // les dés restent visibles jusqu'à la fin des scènes
     playOmens(scenes, soundEnabled(), reduit); // joue (rien si la liste est vide)
   };
   if (stage) stage.roll({ kinds: kindsFor(reglages), faces, reduits, fletris, sound: soundEnabled(), onDone: terminer }); // 4. L'ANIMATION 3D plein écran, qui atterrit sur les faces tirées

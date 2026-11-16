@@ -3,7 +3,7 @@ import '@fontsource/cormorant-garamond/latin-600.css'; // titres (police libre, 
 import '@fontsource/cormorant-garamond/latin-700.css'; // chiffres des dés
 import '@fontsource/source-sans-3/latin-400.css'; // texte courant
 import '@fontsource/source-sans-3/latin-600.css'; // texte en gras
-import '@fontsource/press-start-2p/latin-400.css'; // annonce Réussite / Échec (police pixel libre, hébergée dans l'app)
+import '@fontsource/jacquard-24/latin-400.css'; // annonce Réussite / Échec (gothique pixel libre, hébergée dans l'app)
 import './styles/tokens.css'; // couleurs et tailles
 import './styles/base.css'; // base
 import './styles/layout.css'; // structure
