@@ -7,6 +7,7 @@ import { closeOmen, isOmenOpen } from './omens'; // scènes de présage
 import { all, byId } from './dom'; // outils de recherche d'éléments
 import { closeMenus, isMenuOpen } from './menus'; // menus
 import { showToast } from './toast'; // messages
+import { closeCharacter, isCharacterOpen } from '../screens/characters'; // fiche ouverte
 
 const grandEcran = window.matchMedia('(min-width: 900px)'); // true quand le tiroir est une colonne fixe
 let courant: ScreenId = HOME_SCREEN; // écran affiché
@@ -82,6 +83,7 @@ function surRetour(): void {
     dialogOpen: isDialogOpen(), // fenêtre ouverte ?
     menuOpen: isMenuOpen(), // menu ouvert ?
     drawerOpen: isDrawerOpen(), // tiroir ouvert ?
+    characterOpen: isCharacterOpen(), // fiche ouverte ?
     screen: courant, // écran affiché
     homeScreen: HOME_SCREEN, // écran d'accueil
     exitArmed: sortieArmee, // avertissement déjà donné ?
@@ -101,6 +103,10 @@ function surRetour(): void {
       break;
     case 'close-drawer':
       closeDrawer(); // ferme le tiroir
+      regarder(); // reprend la garde
+      break;
+    case 'close-character':
+      closeCharacter(); // retour à la liste des personnages
       regarder(); // reprend la garde
       break;
     case 'go-home':

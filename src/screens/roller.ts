@@ -49,6 +49,11 @@ function change(patch: Partial<RollInput>): void {
   syncUI(); // met l'affichage à jour
 }
 
+// Règle le lanceur depuis l'extérieur (fiche de personnage) : remplace les réglages courants.
+export function setRollInput(next: RollInput): void {
+  change(next); // normalise, mémorise et met l'affichage à jour
+}
+
 // Fabrique une pastille de dé (texte et/ou symbole), avec un libellé pour les lecteurs d'écran.
 function chip(texte: string | null, libelle: string, classes: string, glyph?: GlyphName): HTMLElement {
   const el = document.createElement('span'); // la pastille

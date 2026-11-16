@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.9.0 — 2026-11-16
+- Fiches de personnages remplissables (enregistrées sur l'appareil) avec lien vers le lanceur
+
 ## 0.8.3 — 2026-11-16
 - Les présages et les tau s'animent par-dessus l'annonce Réussite / Échec, qui reste plus longtemps
 

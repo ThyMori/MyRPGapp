@@ -38,6 +38,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.9.0 | **Fiches de personnages** (appareil seulement) : liste, création, duplication, suppression avec confirmation, éditeur à sections repliables, enregistrement automatique, lien avec le lanceur (toucher une compétence) |
 | 0.8.1 | Annonce « RÉUSSITE » (or) / « ÉCHEC » (rouge) sobre et silencieuse, en police lisible, dès que les dés sont immobiles ; retrait du style arcade et des voix de 0.7.0 / 0.8.0 ; réglage dans le menu ⚙ |
 | 0.6.2 | Retour sur GitHub Pages (workflow `pages.yml` + `public/CNAME`), Netlify mis en pause (`netlify.toml` annule les builds) ; aucun changement dans l'app |
 | 0.6.0 | Dés annulés par l'état Épuisé : ils se flétrissent (ternis, recroquevillés, lueur rouge à chaque battement) avec un battement de cœur qui faiblit |
@@ -103,6 +104,19 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 - **Annonce Réussite / Échec (0.8.1)** : `src/ui/verdict.ts` (une bande au centre de l'écran), `omens.css` (style, police Cormorant Garamond déjà dans l'app), `src/ui/verdictPlan.ts` (`planHold`, pur et testé). Elle apparaît dès que les dés sont immobiles (2,4 s), **sans son**, **en même temps** que le présage (Œil / rune) et la fête des tau, qui s'animent **par-dessus** elle : calque `#verdict` (z-index 52, sous les présages à 55), indépendant de la file des présages. Elle reste 1,2 s de plus que la dernière animation (`dureeTotaleMs`), et les dés restent visibles jusqu'à sa fin. Un toucher ou Retour ferme tout. Réglage dans le menu ⚙. Les essais précédents (arcade pixel en 0.7.0, arcade fantasy avec voix synthétisée en 0.8.0) ont été jugés illisibles et envahissants : ils sont dans l'historique git si besoin.
 - Repli automatique sur les dessins plats si WebGL manque ou si le contexte est perdu.
 
+| Seuil de réussite d'un attribut (fiche) | 20 − valeur de l'attribut (valeur de 2 à 8) ; compétences de combat : Corps |
+| Compétence favorisée (fiche) | dé du Destin Favorisé dans le lanceur |
+
+## Fiches de personnages (0.9.0)
+
+- Code : `src/characters/` (`model.ts` types et listes, `sanitize.ts` remise en ordre, `derive.ts` calculs et préparation d'un jet, tests dans `characters.test.ts`), `src/state/characters.ts` (stockage), `src/screens/characters.ts` (écran), `src/ui/sheetFields.ts` (champs), `src/styles/characters.css`.
+- Mise en page inspirée de la fiche papier alternative d'Anneau Unique (mêmes rubriques), **sans reprendre ses illustrations ni ses textes** : dépôt public, la fiche d'origine est « pour usage personnel ».
+- Rubriques : Personnage (+ Histoire), Vaillance / Sagesse / Points, Attributs (valeur 2 à 8, seuil calculé), 18 compétences (rang 0 à 6, case favorisée), Endurance, Espoir, États (Épuisé, Mélancolique, Blessé + blessure), Récompenses et Vertus, Combat (4 compétences de combat, attirail de guerre, armures, parade et protection avec totaux), Équipement de voyage et Trésor.
+- Données : clé `myrpgapp.characters` (liste de fiches), `myrpgapp.character-open` (dernière fiche ouverte, rouverte au démarrage). Une fiche abîmée ou ancienne est complétée par des valeurs sûres (`sanitizeCharacter`), jamais perdue en bloc.
+- Lien avec le lanceur : toucher le nom d'une compétence règle le lanceur (dés de Maîtrise = rang, SR = 20 − attribut, Favorisé si cochée, Épuisé / Mélancolique repris des états) et l'ouvre.
+- Bouton Retour : ferme une fenêtre, puis la fiche (retour à la liste), puis revient au lanceur.
+- Limite connue : les données sont **seulement sur l'appareil** (vider les données du navigateur les efface). L'export / import JSON est prévu.
+
 ## Dépannage
 
 - Écran d'erreur au démarrage : bouton « Réinitialiser et recharger ».
@@ -112,7 +126,7 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 
 ## Feuille de route
 
-1. Fiches de personnages (appareil, puis export/import JSON).
+1. Fiches de personnages : export / import JSON, portrait, Épuisé automatique selon l'endurance (à valider avec le livre).
 2. Oracles avec jets.
 3. Choix de la teinte par jeu, autres jeux et dés.
 4. Partage entre utilisateurs (nécessitera Supabase).

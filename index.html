@@ -178,12 +178,29 @@
             </div>
           </section>
 
-          <!-- ÉCRAN : Personnages (à venir) -->
+          <!-- ÉCRAN : Personnages -->
           <section class="screen" id="screen-characters" data-screen="characters" aria-label="Personnages" hidden>
-            <div class="empty-state">
-              <h3>Personnages</h3>
-              <p>Les fiches de personnages arrivent à une prochaine étape. Tu pourras les créer ici et les partager avec ton cercle.</p>
-              <p style="margin-top: 14px"><button class="btn" type="button" data-goto="roller">Retour au lanceur</button></p>
+            <!-- Vue liste -->
+            <div class="char-list-view" id="character-list-view">
+              <div class="char-scroll">
+                <ul class="char-list" id="character-list"></ul>
+                <div class="empty-state" id="character-empty" hidden>
+                  <h3>Aucun personnage</h3>
+                  <p>Crée ta première fiche : elle est enregistrée sur cet appareil.</p>
+                  <p style="margin-top: 14px"><button class="btn btn-primary" type="button" id="btn-char-new-empty">Nouveau personnage</button></p>
+                </div>
+              </div>
+              <div class="actionbar">
+                <button class="btn btn-primary" type="button" id="btn-char-new">Nouveau personnage</button>
+              </div>
+            </div>
+            <!-- Vue éditeur : une fiche -->
+            <div class="char-editor" id="character-editor" hidden>
+              <div class="char-bar">
+                <button class="btn" type="button" id="btn-char-back" hidden>← Liste</button>
+                <span class="char-saved">Enregistré automatiquement sur cet appareil</span>
+              </div>
+              <div class="char-scroll" id="character-sheet"></div>
             </div>
           </section>
 
@@ -224,12 +241,28 @@
         <p>La carte du haut donne le niveau (<strong>Échec</strong>, <strong>Réussite</strong>, <strong>Grande réussite</strong> ou <strong>Réussite extraordinaire</strong>), le total et le détail de chaque dé. Les dés ignorés à cause de l'état <strong>Épuisé</strong> sont barrés.</p>
         <h3>4. Historique</h3>
         <p>Touche un jet de la liste pour <strong>Reprendre ces réglages</strong> ou le <strong>Retirer</strong>. <strong>Effacer l'historique</strong> se trouve dans le menu ⋮ (ou l'icône poubelle sur grand écran).</p>
-        <h3>5. Se déplacer</h3>
+        <h3>5. Fiches de personnages</h3>
+        <p>Dans <strong>Personnages</strong>, touche <strong>Nouveau personnage</strong>. La fiche est découpée en sections qui se plient et se déplient : Personnage, Attributs, Compétences, Endurance, Espoir, États, Combat… Tout s'enregistre tout seul, sur cet appareil seulement. <strong>Dupliquer</strong> et <strong>Supprimer</strong> sont sur chaque carte de la liste.</p>
+        <p>Pour un attribut, touche sa valeur (2 à 8) : le <strong>seuil de réussite</strong> se calcule seul. Pour une compétence, touche une pastille pour fixer le rang ; retouche le rang actuel pour le baisser d'un cran. La case de gauche marque une compétence <strong>favorisée</strong>.</p>
+        <p><strong>Touche le nom d'une compétence</strong> : le lanceur s'ouvre déjà réglé (dés de Maîtrise = rang, seuil de l'attribut, Favorisé si la case est cochée, Épuisé et Mélancolique repris des états de la fiche). Il ne reste qu'à toucher Lancer. Retour te ramène à la liste.</p>
+        <h3>6. Se déplacer</h3>
         <p>Le bouton ☰ ouvre le menu, comme un glissement du doigt vers la droite. Le bouton <strong>Retour</strong> du téléphone ferme d'abord ce qui est ouvert, puis revient au lanceur ; il faut appuyer deux fois pour quitter l'app.</p>
-        <h3>6. Installer et dépanner</h3>
+        <h3>7. Installer et dépanner</h3>
         <p>La roue crantée du menu propose <strong>Installer l'app</strong>, <strong>Chercher une mise à jour</strong> et <strong>Réinitialiser et recharger</strong> si quelque chose se bloque. Tes jets et tes réglages sont gardés sur cet appareil.</p>
       </div>
       <div class="dialog-foot"><button class="btn btn-primary" type="button" data-close>Fermer</button></div>
+    </dialog>
+
+    <!-- Fenêtre : confirmer la suppression d'une fiche -->
+    <dialog id="dialog-delete-char" aria-labelledby="delete-char-title">
+      <div class="dialog-body">
+        <h2 id="delete-char-title" tabindex="-1">Supprimer cette fiche ?</h2>
+        <p><strong id="delete-char-name"></strong> sera effacé de cet appareil. Ce n'est pas récupérable.</p>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn btn-primary" type="button" id="btn-delete-char-ok">Supprimer</button>
+        <button class="btn" type="button" data-close>Garder</button>
+      </div>
     </dialog>
 
     <!-- Fenêtre : guide d'installation (adapté à l'appareil par le code) -->

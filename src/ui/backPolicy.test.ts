@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'; // outils de test
 import { decideBack, type BackContext } from './backPolicy'; // fonction testée
 
 // Contexte de départ : rien d'ouvert, sur l'écran d'accueil.
-const repos: BackContext = { omenOpen: false, dialogOpen: false, menuOpen: false, drawerOpen: false, screen: 'roller', homeScreen: 'roller', exitArmed: false };
+const repos: BackContext = { omenOpen: false, dialogOpen: false, menuOpen: false, drawerOpen: false, characterOpen: false, screen: 'roller', homeScreen: 'roller', exitArmed: false };
 
 describe('decideBack', () => {
   it('ferme le présage avant tout le reste', () => {
@@ -20,6 +20,13 @@ describe('decideBack', () => {
   });
   it('revient à l’accueil depuis un autre écran', () => {
     expect(decideBack({ ...repos, screen: 'characters' })).toBe('go-home'); // remonte d'un niveau
+  });
+  it('ferme la fiche ouverte avant de revenir à l’accueil', () => {
+    expect(decideBack({ ...repos, screen: 'characters', characterOpen: true })).toBe('close-character'); // retour à la liste
+    expect(decideBack({ ...repos, screen: 'characters' })).toBe('go-home'); // la liste remonte à l'accueil
+  });
+  it('une fenêtre ouverte passe avant la fiche', () => {
+    expect(decideBack({ ...repos, screen: 'characters', characterOpen: true, dialogOpen: true })).toBe('close-dialog'); // la fenêtre d'abord
   });
   it('demande confirmation avant de quitter, puis quitte', () => {
     expect(decideBack(repos)).toBe('arm-exit'); // premier appui : avertissement

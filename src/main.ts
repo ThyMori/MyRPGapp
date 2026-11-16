@@ -8,8 +8,10 @@ import './styles/base.css'; // base
 import './styles/layout.css'; // structure
 import './styles/roller.css'; // écran du lanceur
 import './styles/omens.css'; // scènes de présage
+import './styles/characters.css'; // fiches de personnages
 import { GAMES } from './games'; // liste des jeux
 import { registerServiceWorker, updateAndReload } from './pwa/register'; // mode hors ligne
+import { initCharacters } from './screens/characters'; // écran des personnages
 import { initRoller } from './screens/roller'; // écran du lanceur
 import { initDialogs, openDialog } from './ui/dialogs'; // fenêtres
 import { byId } from './ui/dom'; // recherche d'élément
@@ -41,6 +43,7 @@ try {
   byId('mi-update').addEventListener('click', () => void updateAndReload()); // « Chercher une mise à jour »
   byId('mi-reset').addEventListener('click', () => void window.__resetApp?.()); // « Réinitialiser et recharger »
   initRoller(); // écran du lanceur
+  initCharacters(); // écran des personnages
   initNav(); // navigation (ouvre le dernier écran, pose la garde du bouton Retour)
   initInstall(); // installation
   void registerServiceWorker(); // mode hors ligne
