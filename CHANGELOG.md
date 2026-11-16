@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 0.2.7 — 2026-11-16
+- Symboles et chiffres gravés (creusés) dans les dés
+- Symbole de réussite en forme de tau grec, petit, avec le 6 au milieu
+
 ## 0.2.6 — 2026-11-16
 - Dés blancs couleur crème
 - Angles et arêtes des dés arrondis (faces toujours plates)

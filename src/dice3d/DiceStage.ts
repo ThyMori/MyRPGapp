@@ -10,7 +10,7 @@ import { startDiceSound, stopDiceSound, type SoundEvent } from '../audio/diceSou
 import type { FeatFace } from '../rules/tor'; // faces du dé du Destin
 import { readPalette, type DicePalette } from './colors'; // couleurs lues dans le CSS
 import { CUBE_VALUES, cubeFaces, dodecaFaces, featValuesForFaces, type FaceInfo } from './faces'; // faces des dés
-import { makeLabelTexture } from './labels'; // étiquettes des faces
+import { makeLabelTextures } from './labels'; // étiquettes gravées des faces
 import { scatterDice, type DieKind } from './layout'; // répartition des dés posés
 import { roundedPolyhedron } from './rounded'; // formes arrondies
 import { quaternionForFace } from './orientation'; // orientation d'atterrissage
@@ -45,7 +45,7 @@ interface Template {
   bodyMat: MeshStandardMaterial; // matière du corps
   faces: FaceInfo[]; // faces
   values: FeatFace[]; // valeur écrite sur chaque face
-  labels: Map<string, MeshBasicMaterial>; // matière d'étiquette par valeur
+  labels: Map<string, MeshStandardMaterial>; // matière d'étiquette (gravure) par valeur
   scale: number; // échelle du dé
   restY: number; // hauteur du centre quand le dé est posé
   labelSize: number; // côté de l'étiquette
@@ -171,15 +171,25 @@ export class DiceStage {
     };
   }
 
-  // Matière d'étiquette pour une valeur (créée une fois puis réutilisée).
-  private labelMaterial(tpl: Template, kind: DieKind, value: FeatFace): MeshBasicMaterial {
+  // Matière d'étiquette gravée pour une valeur (créée une fois puis réutilisée). Même matière que le corps du dé : la gravure se fond avec lui,
+  // seul le creux (rouge) et ses parois (relief éclairé) se distinguent.
+  private labelMaterial(tpl: Template, kind: DieKind, value: FeatFace): MeshStandardMaterial {
     const k = String(value); // clé de la valeur
     let m = tpl.labels.get(k); // déjà créée ?
     if (!m) {
-      m = new MeshBasicMaterial({ map: makeLabelTexture(kind, value, this.palette), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }); // étiquette transparente
+      const t = makeLabelTextures(kind, value, this.palette); // couleur et relief
+      m = new MeshStandardMaterial({ map: t.map, normalMap: t.normal, roughness: 0.4, metalness: 0.05, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }); // étiquette posée sur la face
       tpl.labels.set(k, m); // on la garde
     }
     return m; // matière prête
+  }
+
+  // Crée à l'avance toutes les étiquettes (la fabrication des textures prend quelques millisecondes chacune : on évite l'à-coup pendant un lancer).
+  private prepareLabels(): void {
+    for (const kind of ['feat', 'success'] as DieKind[]) {
+      const tpl = this.templates[kind]; // modèle de ce type de dé
+      for (const v of tpl.values) this.labelMaterial(tpl, kind, v); // une matière par valeur
+    }
   }
 
   // Plan d'étiquette de la bonne taille (partagé).
@@ -252,6 +262,7 @@ export class DiceStage {
   // Prépare la 3D à l'avance (compile les matières) pour éviter un à-coup au premier lancer.
   warmUp(): void {
     try {
+      this.prepareLabels(); // fabrique toutes les gravures
       this.measure(); // règle la caméra
       this.dice = [this.createDie('feat', false), this.createDie('success', false)]; // un dé de chaque type
       this.renderer.compile(this.scene, this.camera); // compile les matières
@@ -379,6 +390,7 @@ export class DiceStage {
     this.disposeTemplates(); // libère les anciens modèles
     this.palette = readPalette(); // nouvelles couleurs
     this.templates = { feat: this.buildTemplate('feat'), success: this.buildTemplate('success') }; // nouveaux modèles
+    this.prepareLabels(); // fabrique les gravures aux nouvelles couleurs
   }
 
   // Retire les dés de la scène (les modèles partagés restent).
@@ -401,7 +413,8 @@ export class DiceStage {
       t.body.dispose(); // forme
       t.bodyMat.dispose(); // matière du corps
       for (const m of t.labels.values()) {
-        m.map?.dispose(); // texture
+        m.map?.dispose(); // texture de couleur
+        m.normalMap?.dispose(); // texture de relief
         m.dispose(); // matière
       }
     }

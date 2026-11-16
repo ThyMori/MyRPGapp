@@ -30,6 +30,7 @@ export function readThreeColor(name: string): Color {
 // Palette des dés, lue au moment de l'appel (elle change quand l'utilisateur passe des dés noirs aux dés blancs).
 export interface DicePalette {
   body: Color; // corps des dés (noir ou blanc)
+  bodyCss: string; // même couleur, en texte CSS (pour peindre les étiquettes de la même couleur que le dé)
   ink: string; // chiffres et symboles (rouge)
 }
 
@@ -37,6 +38,7 @@ export interface DicePalette {
 export function readPalette(): DicePalette {
   return {
     body: readThreeColor('--die-body'), // corps des dés
+    bodyCss: readCss('--die-body'), // même couleur en texte
     ink: readCss('--die-ink'), // chiffres et symboles
   };
 }

@@ -1,4 +1,4 @@
-// Symboles dessinés par l'app (œil, rune de Gandalf, rune de réussite). Dessins originaux, simples, dans un cadre de 100 × 100.
+// Symboles dessinés par l'app (œil, rune de Gandalf, tau de réussite). Dessins originaux, simples, dans un cadre de 100 × 100.
 // Chaque symbole = des traits (stroke) et éventuellement des formes pleines (fill), en données de tracé SVG.
 
 // Noms des symboles.
@@ -15,7 +15,7 @@ const GLYPHS: Record<GlyphName, { stroke: string[]; fill: string[] }> = {
     fill: [],
   },
   rune: {
-    stroke: ['M34 14 L34 86', 'M34 30 Q78 28 78 46 Q78 62 34 62'], // une tige et une boucle
+    stroke: ['M14 30 Q50 22 86 30', 'M46 27 L46 64 Q46 86 70 80'], // un tau grec (τ) : barre du haut, tige qui s'incurve vers la droite
     fill: [],
   },
 };
