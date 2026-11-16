@@ -199,6 +199,7 @@ function doRoll(): void {
   const outcome = evaluate(reglages, raw); // 2. L'interprétation selon les règles
   const faces: FeatFace[] = [...raw.featFaces, ...raw.successFaces]; // faces à montrer, dans l'ordre des dés
   const reduits = [...raw.featFaces.map((_, i) => raw.featFaces.length > 1 && i !== outcome.keptIndex), ...raw.successFaces.map(() => false)]; // dé du Destin écarté : réduit
+  const fletris = [...raw.featFaces.map(() => false), ...outcome.successDice.map((d) => d.ignored)]; // dés de Maîtrise annulés par l'état Épuisé : ils se flétrissent
   const btn = byId('btn-roll'); // bouton Lancer
   btn.setAttribute('aria-busy', 'true'); // occupé pendant l'animation
   const terminer = () => {
@@ -213,7 +214,7 @@ function doRoll(): void {
     if (tier > 0) scenes.push({ kind: 'tau', tier, n: tauShown(outcome.runes) }); // après le présage s'il y en a un
     playOmens(scenes, soundEnabled(), matchMedia('(prefers-reduced-motion: reduce)').matches); // joue (rien si la liste est vide)
   };
-  if (stage) stage.roll({ kinds: kindsFor(reglages), faces, reduits, sound: soundEnabled(), onDone: terminer }); // 4. L'ANIMATION 3D plein écran, qui atterrit sur les faces tirées
+  if (stage) stage.roll({ kinds: kindsFor(reglages), faces, reduits, fletris, sound: soundEnabled(), onDone: terminer }); // 4. L'ANIMATION 3D plein écran, qui atterrit sur les faces tirées
   else terminer(); // sans 3D : résultat immédiat
 }
 

@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.6.0 — 2026-11-16
+- Dés annulés par Épuisé : flétrissement et battements de cœur
+
 ## 0.5.0 — 2026-11-16
 - Fête des runes de réussite : 1 sympa, 2 grandiose, 3 et plus épique
 

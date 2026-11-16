@@ -2,11 +2,12 @@
 // Principe : le résultat est TIRÉ AU SORT ailleurs (src/rules). Cette scène ne fait que l'ANIMER : les dés arrivent du bas de l'écran,
 // rebondissent sur les bords et s'immobilisent exactement sur les faces tirées. Quelques secondes après, ils s'effacent en fondu.
 import {
-  AmbientLight, DirectionalLight, Group, Matrix4, Mesh,
+  AmbientLight, Color, DirectionalLight, Group, Matrix4, Mesh,
   MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SRGBColorSpace, CanvasTexture, Vector3, WebGLRenderer,
   type BufferGeometry,
 } from 'three'; // briques de la 3D
 import { startDiceSound, stopDiceSound, type SoundEvent } from '../audio/diceSound'; // sons
+import { playHeartbeat, stopHeartbeat } from '../audio/heartSound'; // battements de cœur des dés flétris
 import type { FeatFace } from '../rules/tor'; // faces du dé du Destin
 import { readPalette, type DicePalette } from './colors'; // couleurs lues dans le CSS
 import { CUBE_VALUES, cubeFaces, dodecaFaces, featValuesForFaces, type FaceInfo } from './faces'; // faces des dés
@@ -14,6 +15,7 @@ import { makeLabelTextures } from './labels'; // étiquettes gravées des faces
 import { scatterDice, type DieKind } from './layout'; // répartition des dés posés
 import { roundedPolyhedron } from './rounded'; // formes arrondies
 import { quaternionForFace } from './orientation'; // orientation d'atterrissage
+import { WITHER_DUREE_S, witherState } from './wither'; // flétrissement des dés annulés
 import { easeOut, flightPosition, impactEvents, planFlight, type Flight, type Walls } from './trajectory'; // trajectoires
 
 // Durée d'un lancer, en millisecondes (environ 1 seconde).
@@ -23,6 +25,11 @@ const DECALAGE_MS = 25;
 // Durée pendant laquelle les dés restent visibles une fois posés, puis durée du fondu.
 const MAINTIEN_MS = 3000;
 const FONDU_MS = 600;
+// Les dés flétris : attente après l'arrivée avant que ça commence, et temps de visibilité supplémentaire.
+const ATTENTE_FLETRI_MS = 350;
+const MAINTIEN_FLETRI_MS = 1800;
+// Couleur de cendre vers laquelle un dé flétri se ternit.
+const CENDRE = new Color(0x2e2528);
 // Champ de vision de la caméra, en degrés.
 const CHAMP = 32;
 // Retrait des dés posés par rapport aux bords : la perspective grossit un peu les dés qui se trouvent près du bord.
@@ -65,6 +72,10 @@ interface DieView {
   finalQuat: Quaternion; // orientation finale
   delay: number; // retard de départ
   duration: number; // durée du lancer de ce dé
+  fletri: boolean; // dé annulé par l'état Épuisé : il se flétrit après son arrivée
+  propres: MeshStandardMaterial[]; // matières propres à ce dé (copies), pour pouvoir le ternir seul
+  baseColor: Color; // couleur du corps avant flétrissement
+  tilt: Quaternion; // légère inclinaison finale quand le dé se recroqueville
 }
 
 // Ce qu'il faut pour lancer les dés.
@@ -72,6 +83,7 @@ export interface RollSpec {
   kinds: DieKind[]; // type de chaque dé
   faces: FeatFace[]; // face tirée de chaque dé (le tirage est fait AVANT, ailleurs)
   reduits: boolean[]; // dés à réduire (le dé du Destin écarté quand on est favorisé ou défavorisé)
+  fletris?: boolean[]; // dés qui se flétrissent après l'arrivée (dés de Maîtrise annulés par Épuisé)
   sound: boolean; // jouer les sons ?
   onDone: () => void; // appelé à l'arrivée des dés
 }
@@ -104,6 +116,9 @@ export class DiceStage {
   private lastH = 0; // hauteur de l'écran à la dernière mesure
   private holdTimer = 0; // minuteur « les dés restent visibles »
   private fadeTimer = 0; // minuteur « fondu terminé »
+  private witherTimer = 0; // minuteur « le flétrissement commence »
+  private witherRaf = 0; // animation du flétrissement
+  private sonFletri = false; // jouer les battements de cœur ?
   private observer: ResizeObserver; // surveille la taille de l'écran
   private mouvementReduit: MediaQueryList; // préférence « réduire les animations »
 
@@ -203,12 +218,18 @@ export class DiceStage {
   }
 
   // Construit un dé à partir de son modèle et l'ajoute à la scène.
-  private createDie(kind: DieKind, reduit: boolean): DieView {
+  private createDie(kind: DieKind, reduit: boolean, fletri = false): DieView {
     const tpl = this.templates[kind]; // modèle
     const group = new Group(); // objet 3D du dé
-    group.add(new Mesh(tpl.body, tpl.bodyMat)); // corps
+    const propres: MeshStandardMaterial[] = []; // copies de matières, seulement pour un dé flétri
+    const corps = fletri ? tpl.bodyMat.clone() : tpl.bodyMat; // un dé flétri a sa propre matière (on le ternit seul)
+    if (fletri) propres.push(corps); // à libérer plus tard
+    group.add(new Mesh(tpl.body, corps)); // corps
     tpl.faces.forEach((f, i) => {
-      const etiquette = new Mesh(this.labelGeo(tpl.labelSize), this.labelMaterial(tpl, kind, tpl.values[i])); // étiquette de la face
+      const mat = this.labelMaterial(tpl, kind, tpl.values[i]); // matière de l'étiquette
+      const propre = fletri ? mat.clone() : mat; // copie pour un dé flétri
+      if (fletri) propres.push(propre); // à libérer plus tard
+      const etiquette = new Mesh(this.labelGeo(tpl.labelSize), propre); // étiquette de la face
       etiquette.position.copy(f.center).addScaledVector(f.normal, 0.004); // posée juste au-dessus de la face
       const droite = new Vector3().crossVectors(f.up, f.normal).normalize(); // axe droit du texte
       etiquette.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(droite, f.up, f.normal)); // orientée comme la face
@@ -222,6 +243,7 @@ export class DiceStage {
       tpl, group, shadow, size, restY: tpl.restY * (size / tpl.scale), // le dé réduit se pose plus bas
       flight: { start: { x: 0, z: 0 }, virtual: { x: 0, z: 0 }, rest: { x: 0, z: 0 } }, // trajectoire provisoire
       startY: 5, axis: new Vector3(0, 1, 0), turns: 0, finalQuat: new Quaternion(), delay: 0, duration: DUREE_MS, // état initial
+      fletri, propres, baseColor: tpl.bodyMat.color.clone(), tilt: new Quaternion().setFromAxisAngle(new Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize(), 0.16), // flétrissement
     };
   }
 
@@ -280,7 +302,7 @@ export class DiceStage {
     this.dismissNow(); // retire les dés encore affichés
     this.canvas.hidden = false; // montre le calque plein écran
     this.measure(); // taille de l'écran et caméra (après l'affichage, pour avoir la vraie taille)
-    this.dice = spec.kinds.map((k, i) => this.createDie(k, spec.reduits[i] === true)); // crée les dés
+    this.dice = spec.kinds.map((k, i) => this.createDie(k, spec.reduits[i] === true, spec.fletris?.[i] === true)); // crée les dés
     this.shown = spec.kinds.map((_, i) => spec.faces[i] ?? 1); // faces finales
     const places = scatterDice(spec.kinds, this.halfW / this.grossi - RETRAIT, this.halfH / this.grossi - RETRAIT, Math.random); // où chaque dé se posera
     const evenements: SoundEvent[] = []; // chocs à jouer
@@ -295,6 +317,7 @@ export class DiceStage {
       for (const e of impactEvents(d.flight, this.walls)) evenements.push({ at: (d.delay + e.t * d.duration) / 1000, strength: e.strength, kind: e.kind }); // chocs de ce dé
     });
     this.onDone = spec.onDone; // mémorise le rappel
+    this.sonFletri = spec.sound; // son des battements ?
     if (this.mouvementReduit.matches) {
       this.dice.forEach((d) => this.pose(d, 1)); // pas d'animation si l'appareil réduit les animations : les dés apparaissent posés
       this.render(); // dessine l'état final
@@ -359,8 +382,51 @@ export class DiceStage {
     this.canvas.classList.remove('rolling'); // le calque laisse de nouveau passer les appuis
     const cb = this.onDone; // récupère le rappel
     this.onDone = null; // un seul appel
-    this.holdTimer = window.setTimeout(() => this.fadeOut(), MAINTIEN_MS); // les dés restent visibles un moment
+    const flétris = this.dice.filter((d) => d.fletri); // dés qui vont se flétrir
+    const animer = flétris.length > 0 && !this.mouvementReduit.matches; // animation de flétrissement ?
+    if (flétris.length > 0 && !animer) this.appliquerFletri(1, 0); // animations réduites : on montre directement l'état flétri
+    this.holdTimer = window.setTimeout(() => this.fadeOut(), MAINTIEN_MS + (animer ? MAINTIEN_FLETRI_MS : 0)); // les dés restent visibles un moment (plus longtemps s'ils se flétrissent)
+    if (animer) this.witherTimer = window.setTimeout(() => this.lancerFletri(flétris.length), ATTENTE_FLETRI_MS); // le flétrissement commence juste après l'arrivée
     cb?.(); // prévient l'appelant
+  }
+
+  // Lance l'animation de flétrissement (et les battements de cœur) des dés annulés.
+  private lancerFletri(nb: number): void {
+    if (this.sonFletri) playHeartbeat(nb); // les battements, synchronisés avec l'image
+    const t0 = performance.now(); // départ
+    const image = (now: number) => {
+      const t = Math.min((now - t0) / 1000, WITHER_DUREE_S); // temps écoulé
+      const s = witherState(t); // état à cet instant
+      this.appliquerFletri(s.wither, s.beat); // applique aux dés flétris
+      this.render(); // dessine
+      if (t < WITHER_DUREE_S) this.witherRaf = requestAnimationFrame(image); // image suivante
+    };
+    this.witherRaf = requestAnimationFrame(image); // première image
+  }
+
+  // Applique un état de flétrissement (w : 0 à 1, beat : battement 0 à 1) à tous les dés annulés.
+  private appliquerFletri(w: number, beat: number): void {
+    for (const d of this.dice) {
+      if (!d.fletri) continue; // dé intact
+      const gris = new Color().copy(d.baseColor).lerp(CENDRE, w * 0.88); // le corps se ternit vers la cendre
+      const lueur = beat * (1 - 0.5 * w); // le battement allume une lueur rouge, de plus en plus faible
+      d.propres.forEach((m, i) => {
+        if (i === 0) m.color.copy(gris); // corps
+        else m.color.setScalar(1 - 0.65 * w); // étiquettes : s'assombrissent (la gravure rouge s'éteint)
+        m.emissive.setRGB(0.6 * lueur, 0.04 * lueur, 0.04 * lueur); // lueur du battement
+      });
+      const taille = d.size * (1 - 0.2 * w + 0.07 * beat); // le dé se recroqueville, gonfle un peu à chaque battement
+      d.group.scale.setScalar(taille); // applique la taille
+      d.group.position.y = d.restY * (taille / d.size); // reste posé sur la table
+      d.group.quaternion.copy(this.baseQuatFletri(d, w)); // s'incline un peu
+      this.placeShadow(d, d.group.position.x, d.group.position.z, 0); // l'ombre suit
+      d.shadow.scale.multiplyScalar(taille / d.size); // l'ombre rétrécit avec le dé
+    }
+  }
+
+  // Orientation d'un dé qui se flétrit : son orientation d'arrivée, inclinée progressivement.
+  private baseQuatFletri(d: DieView, w: number): Quaternion {
+    return new Quaternion().copy(d.finalQuat).slerp(new Quaternion().copy(d.tilt).multiply(d.finalQuat), w); // du dé droit au dé incliné
   }
 
   // Efface les dés en fondu.
@@ -373,6 +439,9 @@ export class DiceStage {
   dismissNow(): void {
     window.clearTimeout(this.holdTimer); // annule les minuteurs
     window.clearTimeout(this.fadeTimer);
+    window.clearTimeout(this.witherTimer); // annule le flétrissement
+    cancelAnimationFrame(this.witherRaf);
+    stopHeartbeat(); // coupe les battements
     this.clearDice(); // retire les dés
     this.canvas.classList.remove('fading', 'rolling'); // état de base
     this.canvas.hidden = true; // cache le calque : plus aucun coût
@@ -398,6 +467,7 @@ export class DiceStage {
     for (const d of this.dice) {
       this.scene.remove(d.group, d.shadow); // retire de la scène
       (d.shadow.material as MeshBasicMaterial).dispose(); // libère la matière de l'ombre
+      for (const m of d.propres) m.dispose(); // libère les copies de matières d'un dé flétri
     }
     this.dice = []; // plus de dés
   }
@@ -425,6 +495,9 @@ export class DiceStage {
     cancelAnimationFrame(this.raf); // stoppe l'animation
     window.clearTimeout(this.holdTimer); // annule les minuteurs
     window.clearTimeout(this.fadeTimer);
+    window.clearTimeout(this.witherTimer); // annule le flétrissement
+    cancelAnimationFrame(this.witherRaf);
+    stopHeartbeat(); // coupe les battements
     stopDiceSound(); // coupe le son
     this.observer.disconnect(); // stoppe la surveillance de taille
     this.clearDice(); // retire les dés
