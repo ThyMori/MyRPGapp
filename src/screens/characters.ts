@@ -136,7 +136,7 @@ function ligneCompetence(c: Character, id: string, label: string, rang: number, 
 // Construit tout l'éditeur de la fiche ouverte.
 function construireEditeur(c: Character): HTMLElement {
   const racine = h('div', 'sheet'); // conteneur
-  const nom = textField('Nom du personnage', c.nom, (v) => { c.nom = v; modifie(); }, 80); // nom
+  const nom = textField('Nom', c.nom, (v) => { c.nom = v; modifie(); }, 80); // nom
   nom.classList.add('sheet-name');
   racine.appendChild(nom);
 
@@ -161,9 +161,17 @@ function construireEditeur(c: Character): HTMLElement {
   // Attributs
   const attrs = ATTRS.map((a) => {
     const bloc = h('div', 'attr'); // un attribut
-    const sr = h('p', 'attr-sr'); // seuil calculé
-    const maj = () => { sr.textContent = `Seuil de réussite de ${a.label} : ${seuilReussite(c.attrs[a.id])}`; }; // met à jour le texte
-    bloc.append(h('h4', '', a.label), scale(`Valeur de ${a.label}`, c.attrs[a.id], ATTR_MIN, ATTR_MAX, (v) => { c.attrs[a.id] = v; maj(); modifie(); }), sr); // valeur + seuil
+    const num = h('span', 'sr-num'); // seuil calculé, dans le cadre en losange
+    const cadre = h('div', 'sr-diamond'); // cadre du seuil
+    cadre.appendChild(num);
+    const maj = () => { num.textContent = String(seuilReussite(c.attrs[a.id])); }; // met à jour le nombre
+    bloc.append(
+      h('h4', '', a.label),
+      scale(`Valeur de ${a.label}`, c.attrs[a.id], ATTR_MIN, ATTR_MAX, (v) => { c.attrs[a.id] = v; maj(); modifie(); }, { 2: 'Faible', 4: 'Moyen', 6: 'Bon', 8: 'Excellent' }), // valeur
+      cadre,
+      h('p', 'sr-label', `Seuil de Réussite de ${a.label}`),
+      h('p', 'sr-formula', '20 − Valeur'),
+    );
     maj();
     return bloc;
   });

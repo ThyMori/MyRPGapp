@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.9.1 — 2026-11-16
+- Fiches de personnages : look de la fiche papier (parchemin, encre rouge, polices)
+
 ## 0.9.0 — 2026-11-16
 - Fiches de personnages remplissables (enregistrées sur l'appareil) avec lien vers le lanceur
 

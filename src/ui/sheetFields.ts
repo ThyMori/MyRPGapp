@@ -101,9 +101,10 @@ export function dots(label: string, valeur: number, max: number, onChange: (v: n
   return row;
 }
 
-// Rangée de choix numérotés de min à max, un seul choisi (valeur d'un attribut).
-export function scale(label: string, valeur: number, min: number, max: number, onChange: (v: number) => void): HTMLElement {
-  const row = h('div', 'scale'); // rangée
+// Rangée de cercles numérotés de min à max, un seul choisi (valeur d'un attribut). legendes : mot sous certains nombres (ex. { 2: 'Faible' }).
+export function scale(label: string, valeur: number, min: number, max: number, onChange: (v: number) => void, legendes: Record<number, string> = {}): HTMLElement {
+  const box = h('div', 'scale-box'); // enveloppe : cercles + légendes
+  const row = h('div', 'scale'); // rangée de cercles
   row.setAttribute('role', 'radiogroup');
   row.setAttribute('aria-label', label);
   let v = valeur; // choix courant
@@ -114,16 +115,21 @@ export function scale(label: string, valeur: number, min: number, max: number, o
     b.setAttribute('aria-checked', String(sel));
   });
   for (let n = min; n <= max; n++) {
-    const b = h('button', 'scale-item', String(n)); // un choix
+    const b = h('button', 'scale-item'); // un choix
     b.type = 'button';
     b.setAttribute('role', 'radio');
     b.setAttribute('aria-label', `${label} : ${n}`);
+    b.append(h('span', 'scale-n', String(n)), h('span', 'scale-c')); // numéro puis cercle
     b.addEventListener('click', () => { v = n; maj(); onChange(v); });
     boutons.push(b);
     row.appendChild(b);
   }
+  const leg = h('div', 'scale-legend'); // légendes sous les cercles
+  leg.setAttribute('aria-hidden', 'true');
+  for (let n = min; n <= max; n++) leg.appendChild(h('span', '', legendes[n] ?? '')); // une case par cercle
   maj();
-  return row;
+  box.append(row, leg);
+  return box;
 }
 
 // Section repliable (<details>) avec son titre.

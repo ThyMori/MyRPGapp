@@ -38,6 +38,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.9.1 | Fiches de personnages : look de la fiche papier (parchemin crème, encre rouge, cadres, cercles et cases rouges, titres Almendra SC, texte Gentium Plus, deux polices libres OFL hébergées dans l'app) |
 | 0.9.0 | **Fiches de personnages** (appareil seulement) : liste, création, duplication, suppression avec confirmation, éditeur à sections repliables, enregistrement automatique, lien avec le lanceur (toucher une compétence) |
 | 0.8.1 | Annonce « RÉUSSITE » (or) / « ÉCHEC » (rouge) sobre et silencieuse, en police lisible, dès que les dés sont immobiles ; retrait du style arcade et des voix de 0.7.0 / 0.8.0 ; réglage dans le menu ⚙ |
 | 0.6.2 | Retour sur GitHub Pages (workflow `pages.yml` + `public/CNAME`), Netlify mis en pause (`netlify.toml` annule les builds) ; aucun changement dans l'app |
@@ -110,6 +111,7 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 ## Fiches de personnages (0.9.0)
 
 - Code : `src/characters/` (`model.ts` types et listes, `sanitize.ts` remise en ordre, `derive.ts` calculs et préparation d'un jet, tests dans `characters.test.ts`), `src/state/characters.ts` (stockage), `src/screens/characters.ts` (écran), `src/ui/sheetFields.ts` (champs), `src/styles/characters.css`.
+- Look (0.9.1) : papier `--paper`, encre `--ink-red`, texte `--ink-text` (tokens.css) ; titres en Almendra SC et texte en Gentium Plus, alternatives libres aux polices de la fiche. Les couleurs ont été relevées sur la fiche. L'en-tête et le tiroir de l'app gardent le thème sombre.
 - Mise en page inspirée de la fiche papier alternative d'Anneau Unique (mêmes rubriques), **sans reprendre ses illustrations ni ses textes** : dépôt public, la fiche d'origine est « pour usage personnel ».
 - Rubriques : Personnage (+ Histoire), Vaillance / Sagesse / Points, Attributs (valeur 2 à 8, seuil calculé), 18 compétences (rang 0 à 6, case favorisée), Endurance, Espoir, États (Épuisé, Mélancolique, Blessé + blessure), Récompenses et Vertus, Combat (4 compétences de combat, attirail de guerre, armures, parade et protection avec totaux), Équipement de voyage et Trésor.
 - Données : clé `myrpgapp.characters` (liste de fiches), `myrpgapp.character-open` (dernière fiche ouverte, rouverte au démarrage). Une fiche abîmée ou ancienne est complétée par des valeurs sûres (`sanitizeCharacter`), jamais perdue en bloc.

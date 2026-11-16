@@ -1,7 +1,7 @@
 {
   "name": "myrpgapp",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.9.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,9 @@
     "version:check": "node scripts/bump-version.mjs --check"
   },
   "dependencies": {
+    "@fontsource/almendra-sc": "^5.3.0",
     "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/gentium-plus": "^5.3.0",
     "@fontsource/source-sans-3": "^5.3.1",
     "three": "^0.187.0"
   },

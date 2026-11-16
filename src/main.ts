@@ -3,6 +3,10 @@ import '@fontsource/cormorant-garamond/latin-600.css'; // titres (police libre, 
 import '@fontsource/cormorant-garamond/latin-700.css'; // chiffres des dés
 import '@fontsource/source-sans-3/latin-400.css'; // texte courant
 import '@fontsource/source-sans-3/latin-600.css'; // texte en gras
+import '@fontsource/almendra-sc/latin-400.css'; // titres de la fiche de personnage
+import '@fontsource/gentium-plus/latin-400.css'; // texte de la fiche
+import '@fontsource/gentium-plus/latin-700.css'; // libellés en gras
+import '@fontsource/gentium-plus/latin-400-italic.css'; // petites légendes
 import './styles/tokens.css'; // couleurs et tailles
 import './styles/base.css'; // base
 import './styles/layout.css'; // structure
