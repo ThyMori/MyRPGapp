@@ -31,6 +31,16 @@
   --die-body: hsl(0 0% 7%); /* corps des dés : noir */
   --die-ink: hsl(2 90% 56%); /* chiffres, œil et runes : rouge vif, lisible sur le noir */
 
+  /* Présages (Œil de Sauron, rune de Gandalf) : couleurs de la scène plein écran. */
+  --omen-fire: hsl(14 100% 52%); /* feu de l'Œil */
+  --omen-ember: hsl(2 80% 22%); /* braise, bord de l'iris */
+  --omen-gold: hsl(44 100% 62%); /* cœur de l'iris */
+  --omen-dark: hsl(0 60% 6%); /* fond sombre de l'Œil */
+  --omen-blue: hsl(212 100% 56%); /* lumière de Gandalf */
+  --omen-ice: hsl(200 100% 82%); /* cristal clair */
+  --omen-white: hsl(200 100% 97%); /* cœur du cristal */
+  --omen-wood: hsl(32 28% 36%); /* bois du bâton */
+
   /* Polices (hébergées dans l'app, importées dans src/main.ts). */
   --font-title: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; /* titres */
   --font-body: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif; /* texte courant */

@@ -30,14 +30,9 @@ function peindre(ctx: CanvasRenderingContext2D, kind: DieKind, face: FeatFace, c
   const c = TAILLE / 2; // centre
   const feat = kind === 'feat'; // d12 ou d6 ?
   const symbole = feat ? 215 : 225; // taille des symboles : presque toute la face
-  const trait = (e: number) => e + (grow * 100) / symbole; // épaisseur de trait d'un symbole (cadre de 100), avec l'élargissement
-  const symboleSeul = (nom: GlyphName, x: number, y: number, taille: number) => drawGlyph(ctx, nom, x, y, taille, couleur, 13 + (grow * 100) / taille); // un symbole
-  if (face === 'eye') {
-    drawGlyph(ctx, 'eye', c, c, symbole, couleur, trait(11)); // l'œil de Sauron
-    return;
-  }
-  if (face === 'gandalf') {
-    drawGlyph(ctx, 'gandalf', c, c, symbole, couleur, trait(11)); // la rune de Gandalf
+  const symboleSeul = (nom: GlyphName, x: number, y: number, taille: number) => drawGlyph(ctx, nom, x, y, taille, couleur, (grow * 100) / taille); // un symbole, élargi de grow pixels
+  if (face === 'eye' || face === 'gandalf') {
+    symboleSeul(face, c, c, symbole); // l'œil de Sauron ou la rune de Gandalf
     return;
   }
   const six = kind === 'success' && face === 6; // la face 6 du dé de Maîtrise porte aussi le tau de réussite
@@ -49,7 +44,7 @@ function peindre(ctx: CanvasRenderingContext2D, kind: DieKind, face: FeatFace, c
     taille = Math.floor((taille * largeurMax) / largeur); // réduit la police pour que « 10 » tienne
     ctx.font = `600 ${taille}px ${POLICE}`; // police réduite
   }
-  const y = c + taille * 0.04 + (six ? 12 : 0); // hauteur du chiffre (le 6 de réussite est un peu descendu pour laisser la place au tau)
+  const y = c + taille * 0.04 + (six ? 14 : 0); // hauteur du chiffre (le 6 de réussite est un peu descendu pour laisser la place au tau)
   ctx.fillStyle = couleur; // couleur du dessin
   ctx.strokeStyle = couleur; // couleur de l'élargissement
   ctx.lineJoin = 'round'; // angles arrondis
@@ -58,9 +53,9 @@ function peindre(ctx: CanvasRenderingContext2D, kind: DieKind, face: FeatFace, c
   ctx.textBaseline = 'middle'; // centré verticalement
   if (grow > 0) ctx.strokeText(String(face), c, y); // élargit le chiffre
   ctx.fillText(String(face), c, y); // écrit le chiffre
-  if (face === 6 || face === 9) {
+  if (feat && (face === 6 || face === 9)) {
     const bas = y + taille * 0.37; // le soulignement se place juste sous le chiffre
-    ctx.fillRect(c - 52 - grow / 2, bas - grow / 2, 104 + grow, 12 + grow); // petit soulignement pour ne pas confondre 6 et 9
+    ctx.fillRect(c - 52 - grow / 2, bas - grow / 2, 104 + grow, 12 + grow); // petit soulignement pour ne pas confondre 6 et 9 (sur le d12 seulement : le 6 du d6 n'en a pas)
   }
   if (six) symboleSeul('rune', 206, 56, 70); // le tau de réussite, en petit, dans le coin en haut à droite
 }

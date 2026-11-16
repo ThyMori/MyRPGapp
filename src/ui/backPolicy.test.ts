@@ -3,9 +3,12 @@ import { describe, expect, it } from 'vitest'; // outils de test
 import { decideBack, type BackContext } from './backPolicy'; // fonction testée
 
 // Contexte de départ : rien d'ouvert, sur l'écran d'accueil.
-const repos: BackContext = { dialogOpen: false, menuOpen: false, drawerOpen: false, screen: 'roller', homeScreen: 'roller', exitArmed: false };
+const repos: BackContext = { omenOpen: false, dialogOpen: false, menuOpen: false, drawerOpen: false, screen: 'roller', homeScreen: 'roller', exitArmed: false };
 
 describe('decideBack', () => {
+  it('ferme le présage avant tout le reste', () => {
+    expect(decideBack({ ...repos, omenOpen: true, dialogOpen: true, drawerOpen: true })).toBe('close-omen'); // le présage couvre l'écran
+  });
   it('ferme la fenêtre ouverte en premier, même si le tiroir est ouvert', () => {
     expect(decideBack({ ...repos, dialogOpen: true, drawerOpen: true })).toBe('close-dialog'); // priorité à la fenêtre
   });

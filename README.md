@@ -37,6 +37,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.3.0 | Présages : scène plein écran animée avec son quand l'Œil de Sauron (feu, battements, cor dissonant) ou la Rune de Gandalf (bâton en lumière bleue, carillon féérique) sort sur le dé du Destin gardé ; Œil et rune redessinés avec plus de détails ; plus de trait sous le 6 du d6 |
 | 0.2.7 | Chiffres et symboles gravés (creusés) dans les dés (relief calculé par `src/dice3d/engrave.ts`) ; symbole de réussite en tau grec (τ), petit, avec le 6 au milieu de la face |
 | 0.2.6 | Dés blancs couleur crème ; angles et arêtes des dés arrondis, faces toujours plates (`src/dice3d/rounded.ts`) |
 | 0.2.5 | Mise à jour fiable lors d'un changement d'hébergeur ou d'une panne : si le serveur répond 404 ou une erreur 5xx, l'app s'affiche depuis le cache (comme hors ligne) ; une erreur n'est jamais gardée en cache ; 9 tests du service worker |
@@ -80,6 +81,12 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 - **Couleurs** : `--die-body`, `--die-ink`, `--die-edge` dans `tokens.css` ; l'attribut `data-dice` (`black` / `white`) sur `<html>` choisit le jeu de couleurs.
 - **Son** (`src/audio/diceSound.ts`) : fabriqué par l'appareil (Web Audio), aucun fichier. Un « toc » par rebond et par choc, programmé d'après la trajectoire.
 - Animation coupée si l'appareil réduit les animations (les dés apparaissent posés, un seul « toc »).
+
+### Présages (0.3.0)
+
+- `src/ui/omens.ts` : construit la scène (dessins SVG) et la ferme au toucher, au bouton Retour (`close-omen`) ou au lancer suivant ; `src/styles/omens.css` : mouvements (≈ 2,8 s) ; `src/audio/omenSound.ts` : sons synthétisés.
+- Seulement pour le dé du Destin **gardé** (Favorisé / Défavorisé : l'autre dé ne déclenche rien). Le réglage « Son des dés » coupe aussi le son des présages.
+- Animations réduites : image fixe pendant 1,8 s, sans mouvement.
 
 ## Dépannage
 

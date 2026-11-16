@@ -3,6 +3,7 @@ import { HOME_SCREEN, SCREENS, pickScreen, type ScreenId } from '../state/settin
 import { loadJson, saveJson } from '../state/storage'; // mémoire locale
 import { decideBack } from './backPolicy'; // décision du bouton Retour
 import { closeTopDialog, isDialogOpen } from './dialogs'; // fenêtres
+import { closeOmen, isOmenOpen } from './omens'; // scènes de présage
 import { all, byId } from './dom'; // outils de recherche d'éléments
 import { closeMenus, isMenuOpen } from './menus'; // menus
 import { showToast } from './toast'; // messages
@@ -77,6 +78,7 @@ function regarder(): void {
 function surRetour(): void {
   if ((history.state as { myrpg?: string } | null)?.myrpg === 'garde') return; // avance dans l'historique : rien à faire
   const action = decideBack({
+    omenOpen: isOmenOpen(), // présage affiché ?
     dialogOpen: isDialogOpen(), // fenêtre ouverte ?
     menuOpen: isMenuOpen(), // menu ouvert ?
     drawerOpen: isDrawerOpen(), // tiroir ouvert ?
@@ -85,6 +87,10 @@ function surRetour(): void {
     exitArmed: sortieArmee, // avertissement déjà donné ?
   });
   switch (action) {
+    case 'close-omen':
+      closeOmen(); // ferme le présage
+      regarder(); // reprend la garde
+      break;
     case 'close-dialog':
       closeTopDialog(); // ferme la fenêtre
       regarder(); // reprend la garde

@@ -1,3 +1,5 @@
+import { audioContext, fadeOutAndDisconnect, noiseBuffer } from './core'; // contexte audio et bruit partagés
+
 // Sons des dés, fabriqués par l'appareil avec l'API Web Audio : aucun fichier son à télécharger, donc rien à mettre en cache.
 // Un lancer = un léger roulement + un « toc » à chaque rebond sur la table et à chaque choc contre un bord.
 
@@ -8,40 +10,13 @@ export interface SoundEvent {
   kind: 'floor' | 'wall'; // table (sec et aigu) ou bord (plus sourd et plus long)
 }
 
-let ctx: AudioContext | null = null; // contexte audio (créé au premier lancer, qui est un geste de l'utilisateur)
-let bruit: AudioBuffer | null = null; // une seconde de bruit blanc, réutilisée pour tous les sons
 let courant: GainNode | null = null; // volume du lancer en cours (pour pouvoir le couper)
-
-// Rend le contexte audio, créé et réveillé si besoin. Rend null si l'appareil ne sait pas faire de son.
-function contexte(): AudioContext | null {
-  try {
-    if (!ctx) {
-      const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext; // anciens Safari
-      if (!Ctor) return null; // pas d'audio sur cet appareil
-      ctx = new Ctor(); // crée le contexte
-    }
-    if (ctx.state === 'suspended') void ctx.resume(); // les navigateurs le suspendent tant qu'on n'a pas touché l'écran
-    return ctx; // contexte prêt
-  } catch {
-    return null; // le son est facultatif : on continue sans
-  }
-}
-
-// Bruit blanc d'une seconde (créé une fois).
-function bruitBlanc(c: AudioContext): AudioBuffer {
-  if (!bruit) {
-    bruit = c.createBuffer(1, c.sampleRate, c.sampleRate); // une seconde, un canal
-    const d = bruit.getChannelData(0); // les échantillons
-    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; // du hasard entre -1 et 1
-  }
-  return bruit; // tampon prêt
-}
 
 // Joue un choc à l'instant `quand` (horloge du contexte) : un claquement de bruit filtré + un petit « corps » grave.
 function choc(c: AudioContext, sortie: AudioNode, quand: number, force: number, nature: 'floor' | 'wall'): void {
   const mur = nature === 'wall'; // choc contre un bord ?
   const src = c.createBufferSource(); // source de bruit
-  src.buffer = bruitBlanc(c); // le bruit blanc
+  src.buffer = noiseBuffer(c); // le bruit blanc
   src.playbackRate.value = 0.8 + Math.random() * 0.5; // varie le grain d'un choc à l'autre
   const filtre = c.createBiquadFilter(); // filtre passe-bande : donne le timbre « dur »
   filtre.type = 'bandpass'; // ne garde qu'une bande de fréquences
@@ -71,7 +46,7 @@ function choc(c: AudioContext, sortie: AudioNode, quand: number, force: number, 
 // quand beaucoup de dés tombent ensemble.
 export function startDiceSound(events: SoundEvent[], duree: number, nbDes: number): void {
   stopDiceSound(); // coupe un éventuel lancer précédent
-  const c = contexte(); // contexte audio
+  const c = audioContext(); // contexte audio
   if (!c) return; // pas de son possible
   const sortie = c.createGain(); // volume de ce lancer
   sortie.gain.value = Math.min(1, 1.6 / Math.sqrt(Math.max(1, nbDes))) * 0.8; // moins fort avec beaucoup de dés
@@ -79,7 +54,7 @@ export function startDiceSound(events: SoundEvent[], duree: number, nbDes: numbe
   courant = sortie; // mémorise pour pouvoir le couper
   const t0 = c.currentTime + 0.02; // départ, avec une petite marge pour que tout soit bien programmé
   const roule = c.createBufferSource(); // le roulement : bruit grave qui monte puis s'éteint
-  roule.buffer = bruitBlanc(c); // bruit blanc
+  roule.buffer = noiseBuffer(c); // bruit blanc
   roule.loop = true; // en boucle pendant tout le lancer
   const grave = c.createBiquadFilter(); // passe-bas : ne garde que le grondement
   grave.type = 'lowpass'; // laisse passer les graves
@@ -101,15 +76,8 @@ export function startDiceSound(events: SoundEvent[], duree: number, nbDes: numbe
 export function stopDiceSound(): void {
   const s = courant; // lancer en cours
   courant = null; // plus rien en cours
-  if (!s || !ctx) return; // rien à couper
-  try {
-    s.gain.cancelScheduledValues(ctx.currentTime); // annule les changements de volume prévus
-    s.gain.setValueAtTime(s.gain.value, ctx.currentTime); // part du volume actuel
-    s.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.03); // descend à zéro en 30 ms (évite un « clic »)
-    window.setTimeout(() => s.disconnect(), 80); // débranche ensuite
-  } catch {
-    /* le son est facultatif */
-  }
+  const c = audioContext(); // contexte
+  if (s && c) fadeOutAndDisconnect(c, s); // coupe en douceur
 }
 
 // Petit « toc toc » pour confirmer qu'on vient d'activer le son.

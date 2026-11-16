@@ -9,6 +9,7 @@ import { dayLabel, timeLabel } from '../state/dayLabel'; // libellés de jour et
 import { HISTORY_MAX, sanitizeHistory, sanitizeRollInput, type HistoryEntry } from '../state/settings'; // réglages mémorisés
 import { loadJson, saveJson } from '../state/storage'; // mémoire locale
 import { all, byId } from '../ui/dom'; // recherche d'éléments
+import { closeOmen, playOmen } from '../ui/omens'; // scènes de présage
 import { initPrefs, soundEnabled } from '../ui/prefs'; // couleur des dés et son
 import { showToast } from '../ui/toast'; // messages
 import { VOCAB } from '../vocab'; // vocabulaire du jeu
@@ -187,6 +188,7 @@ function newId(): string {
 
 // Lance les dés. Si un lancer est en cours, un toucher le termine tout de suite.
 function doRoll(): void {
+  closeOmen(); // un nouveau lancer ferme le présage en cours
   if (stage?.isRolling()) {
     stage.finish(true); // un appui pendant le lancer : les dés sautent à l'arrivée, le son s'arrête
     return;
@@ -204,6 +206,7 @@ function doRoll(): void {
     history = [{ id: newId(), ts: Date.now(), input: reglages, outcome }, ...history].slice(0, HISTORY_MAX); // ajoute à l'historique
     if (!saveJson('history', history)) showToast("Impossible de sauvegarder l'historique sur cet appareil.", 'error'); // prévient si le stockage est bloqué
     renderHistory(); // redessine
+    if (outcome.eye || outcome.gandalf) playOmen(outcome.eye ? 'eye' : 'gandalf', soundEnabled(), matchMedia('(prefers-reduced-motion: reduce)').matches); // présage : seulement pour le dé du Destin gardé
   };
   if (stage) stage.roll({ kinds: kindsFor(reglages), faces, reduits, sound: soundEnabled(), onDone: terminer }); // 4. L'ANIMATION 3D plein écran, qui atterrit sur les faces tirées
   else terminer(); // sans 3D : résultat immédiat

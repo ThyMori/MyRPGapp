@@ -1,0 +1,74 @@
+/* Scènes de présage : l'Œil de Sauron (rouge, inquiétant) et le bâton de Gandalf (bleu, féérique). Durée 2,8 s. */
+.omen {
+  position: fixed; /* couvre tout l'écran */
+  inset: 0; /* de bord à bord */
+  z-index: 55; /* au-dessus des dés (50), sous les messages (60) */
+  display: grid; /* centre le dessin */
+  place-items: center; /* centré */
+  overflow: hidden; /* rien ne dépasse */
+  cursor: pointer; /* un appui ferme */
+  animation: omen-scene 2.8s ease-in-out forwards; /* apparition puis disparition en fondu */
+}
+.omen[hidden] { display: none; } /* caché par défaut */
+.omen-glow { position: absolute; inset: 0; } /* lueur de fond */
+.omen-figure { position: relative; width: min(86vw, 62vh); } /* zone du dessin */
+.omen-svg { width: 100%; height: auto; display: block; overflow: visible; } /* le dessin suit la zone */
+
+/* Couleurs des dégradés (arrêts) : toujours des variables. */
+.stop-gold { stop-color: var(--omen-gold); }
+.stop-fire { stop-color: var(--omen-fire); }
+.stop-ember { stop-color: var(--omen-ember); }
+.stop-dark { stop-color: var(--omen-dark); }
+.stop-white { stop-color: var(--omen-white); }
+.stop-ice { stop-color: var(--omen-ice); }
+.stop-blue { stop-color: var(--omen-blue); }
+.stop-halo { stop-color: var(--omen-blue); stop-opacity: 0.7; }
+.stop-clear { stop-color: var(--omen-blue); stop-opacity: 0; }
+
+/* ---------- Œil de Sauron ---------- */
+.omen-eye .omen-glow { background: radial-gradient(ellipse at center, var(--omen-ember) 0%, var(--omen-dark) 75%); animation: omen-eye-glow 2.8s ease-in forwards; } /* noir qui rougeoie */
+.omen-sclera { fill: url(#omen-sclera); stroke: var(--omen-fire); stroke-width: 2; } /* amande */
+.omen-iris { fill: url(#omen-iris); } /* iris de feu */
+.omen-pupil { fill: var(--omen-dark); transform-box: fill-box; transform-origin: center; animation: omen-pupil 2.8s ease-in-out forwards; } /* pupille : cherche puis fixe */
+.omen-lid { transform-box: fill-box; transform-origin: center; animation: omen-lid 2.8s cubic-bezier(0.3, 0, 0.2, 1) forwards; } /* paupières qui s'ouvrent */
+.omen-flame { fill: var(--omen-fire); transform-box: fill-box; transform-origin: 50% 100%; animation: omen-flicker 0.35s ease-in-out infinite alternate; } /* flammes qui vacillent */
+.omen-flames { opacity: 0.9; animation: omen-pulse 0.9s ease-in-out infinite alternate; } /* souffle de la couronne */
+@keyframes omen-eye-glow { 0% { opacity: 0; } 25% { opacity: 0.85; } 70% { opacity: 1; } 100% { opacity: 1; } } /* le rouge monte */
+@keyframes omen-lid { 0%, 8% { transform: scaleY(0.03); } 34% { transform: scaleY(1); } 100% { transform: scaleY(1); } } /* ouverture 0,25 à 0,95 s */
+@keyframes omen-pupil { /* la pupille balaie, trouve, puis se dilate à l'instant du cor (1,9 s) */
+  0%, 34% { transform: translateX(0) scaleX(1); }
+  42% { transform: translateX(-30px) scaleX(1); }
+  54% { transform: translateX(30px) scaleX(1); }
+  64% { transform: translateX(-16px) scaleX(1); }
+  70% { transform: translateX(0) scaleX(1); }
+  100% { transform: translateX(0) scaleX(1.9); }
+}
+@keyframes omen-flicker { from { transform: scale(1, 0.85) rotate(-3deg); } to { transform: scale(1.1, 1.15) rotate(3deg); } } /* vacillement */
+@keyframes omen-pulse { from { opacity: 0.7; } to { opacity: 1; } } /* pulsation */
+
+/* ---------- Bâton de Gandalf ---------- */
+.omen-gandalf .omen-glow { background: radial-gradient(circle at 50% 38%, var(--omen-blue) 0%, transparent 60%), var(--omen-dark); animation: omen-blue-glow 2.8s ease-out forwards; } /* lumière bleue qui s'étend */
+.omen-gandalf .omen-figure { width: min(60vw, 46vh); } /* le bâton est plus étroit */
+.omen-wood { stroke: var(--omen-wood); stroke-width: 6; stroke-linecap: round; fill: none; animation: omen-rise 2.8s ease-out forwards; } /* le bâton monte */
+.omen-orb { fill: url(#omen-orb); transform-box: fill-box; transform-origin: center; animation: omen-ignite 2.8s ease-out forwards; } /* le cristal s'allume à 0,65 s */
+.omen-halo { fill: url(#omen-halo); transform-box: fill-box; transform-origin: center; animation: omen-halo 2.8s ease-out forwards; } /* halo */
+.omen-rays { transform-box: fill-box; transform-origin: center; animation: omen-spin 2.8s linear forwards; } /* rayons qui tournent */
+.omen-ray { fill: var(--omen-ice); opacity: 0.6; } /* un rayon */
+.omen-spark { position: absolute; width: var(--taille); height: var(--taille); border-radius: 50%; background: var(--omen-white); box-shadow: 0 0 10px 3px var(--omen-blue); opacity: 0; animation: omen-spark 1.2s ease-out forwards; } /* étincelle qui monte */
+@keyframes omen-blue-glow { 0%, 15% { opacity: 0; } 35% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes omen-rise { 0% { transform: translateY(40px); opacity: 0; } 25% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(0); opacity: 1; } }
+@keyframes omen-ignite { 0%, 22% { opacity: 0; transform: scale(0.2); } 32% { opacity: 1; transform: scale(1.7); } 45%, 100% { opacity: 1; transform: scale(1.1); } }
+@keyframes omen-halo { 0%, 22% { opacity: 0; transform: scale(0.2); } 40% { opacity: 1; transform: scale(1); } 100% { opacity: 0.85; transform: scale(1.15); } }
+@keyframes omen-spin { from { transform: rotate(0); opacity: 0; } 25% { opacity: 1; } to { transform: rotate(60deg); opacity: 1; } }
+@keyframes omen-spark { 0% { opacity: 0; transform: translateY(0) scale(0.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: translateY(-60px) scale(1); } }
+
+/* Fondu d'ensemble : visible tout de suite, s'éteint sur la fin. */
+@keyframes omen-scene { 0% { opacity: 0; } 8% { opacity: 1; } 84% { opacity: 1; } 100% { opacity: 0; } }
+
+/* Animations réduites : image fixe (état final), sans mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  .omen, .omen *, .omen-fixe, .omen-fixe * { animation: none !important; } /* aucun mouvement */
+  .omen-glow { opacity: 1; } /* lueur visible */
+  .omen-lid, .omen-pupil { transform: none; } /* œil ouvert */
+  .omen-orb, .omen-halo, .omen-wood, .omen-rays { opacity: 1; transform: none; } /* cristal allumé */
+}

@@ -7,6 +7,7 @@ import './styles/tokens.css'; // couleurs et tailles
 import './styles/base.css'; // base
 import './styles/layout.css'; // structure
 import './styles/roller.css'; // écran du lanceur
+import './styles/omens.css'; // scènes de présage
 import { GAMES } from './games'; // liste des jeux
 import { registerServiceWorker, updateAndReload } from './pwa/register'; // mode hors ligne
 import { initRoller } from './screens/roller'; // écran du lanceur
@@ -15,6 +16,7 @@ import { byId } from './ui/dom'; // recherche d'élément
 import { initInstall } from './ui/install'; // installation
 import { initMenus } from './ui/menus'; // menus
 import { initNav } from './ui/nav'; // navigation
+import { initOmens } from './ui/omens'; // scènes de présage
 import { applyGameTheme } from './ui/theme'; // teinte du jeu
 import { initToast } from './ui/toast'; // messages
 import { VERSION } from './version'; // numéro de version
@@ -32,6 +34,7 @@ try {
   applyGameTheme(GAMES[0]); // teinte du jeu, appliquée avant tout affichage
   byId('version').textContent = `v${VERSION}`; // numéro de version en bas du tiroir
   initToast(); // messages
+  initOmens(); // scènes de présage
   initDialogs(); // fenêtres
   initMenus(); // menus
   byId('btn-help').addEventListener('click', () => openDialog('dialog-help')); // bouton « i »

@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.3.0 — 2026-11-16
+- Présages animés et sonores (Œil de Sauron, Rune de Gandalf), Œil et rune redessinés, plus de trait sous le 6
+
 ## 0.2.7 — 2026-11-16
 - Symboles et chiffres gravés (creusés) dans les dés
 - Symbole de réussite en forme de tau grec, petit, avec le 6 au milieu

@@ -3,6 +3,7 @@
 
 // Ce que l'app sait de son état au moment de l'appui.
 export interface BackContext {
+  omenOpen: boolean; // une scène de présage (Œil, rune) est affichée
   dialogOpen: boolean; // une fenêtre de dialogue est ouverte
   menuOpen: boolean; // un menu (⋮ ou roue crantée) est ouvert
   drawerOpen: boolean; // le tiroir latéral est ouvert (téléphone)
@@ -12,10 +13,11 @@ export interface BackContext {
 }
 
 // Les actions possibles.
-export type BackAction = 'close-dialog' | 'close-menu' | 'close-drawer' | 'go-home' | 'arm-exit' | 'exit';
+export type BackAction = 'close-omen' | 'close-dialog' | 'close-menu' | 'close-drawer' | 'go-home' | 'arm-exit' | 'exit';
 
 // Choisit l'action, dans l'ordre de priorité.
 export function decideBack(c: BackContext): BackAction {
+  if (c.omenOpen) return 'close-omen'; // 0. la scène de présage, qui couvre tout l'écran
   if (c.dialogOpen) return 'close-dialog'; // 1. la fenêtre ouverte
   if (c.menuOpen) return 'close-menu'; // 2. le menu ouvert
   if (c.drawerOpen) return 'close-drawer'; // 3. le tiroir ouvert
