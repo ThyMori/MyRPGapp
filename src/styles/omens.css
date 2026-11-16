@@ -90,7 +90,8 @@
 @media (prefers-reduced-motion: reduce) { .omen-tau-glyph { opacity: 1; transform: none; } } /* image fixe */
 
 /* ---------- Annonce Réussite / Échec : bande sobre, sans bruit ---------- */
-.omen-verdict { background: var(--verdict-dim); animation-duration: 2.4s; cursor: pointer; } /* voile léger, fondu sur 2,4 s */
+.verdict-layer { position: fixed; inset: 0; z-index: 57; display: flex; align-items: center; justify-content: center; background: var(--verdict-dim); cursor: pointer; } /* plein écran, au-dessus des présages (55), sous les messages (60) */
+.verdict-layer[hidden] { display: none; } /* caché par défaut */
 .verdict-box { width: 100%; padding: 1.2rem 1rem; text-align: center; background: var(--verdict-band); border-block: 2px solid var(--verdict-accent); animation: verdict-in 0.35s ease-out both; } /* bande centrale bordée d'un filet */
 .verdict-win { --verdict-accent: var(--verdict-win); } /* or */
 .verdict-lose { --verdict-accent: var(--verdict-lose); } /* rouge sourd */

@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.8.2 — 2026-11-16
+- L'annonce Réussite / Échec se joue en même temps et par-dessus les présages et les tau
+
 ## 0.8.1 — 2026-11-16
 - Annonce Réussite / Échec sobre, lisible et silencieuse
 

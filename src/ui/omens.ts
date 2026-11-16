@@ -104,6 +104,8 @@ let racine: HTMLElement | null = null; // calque des présages
 let canvas3d: HTMLCanvasElement | null = null; // canvas du rendu 3D (créé au premier besoin)
 let moteur: OmenGL | null | undefined; // moteur 3D (undefined = pas encore essayé, null = indisponible)
 let ouvert = false; // un présage est affiché
+let voile: HTMLElement | null = null; // calque de l'annonce Réussite / Échec (au-dessus des présages)
+let minuteurVerdict = 0; // minuteur de fin de l'annonce
 
 // Fabrique les petites étincelles (éléments HTML) du présage de Gandalf.
 function sparks(): HTMLElement[] {
@@ -120,7 +122,7 @@ function sparks(): HTMLElement[] {
 
 // Un présage est-il affiché ?
 export function isOmenOpen(): boolean {
-  return ouvert; // état courant
+  return ouvert || (voile !== null && !voile.hidden); // présage ou annonce affichés
 }
 
 // Efface la scène affichée (sans toucher à la file d'attente).
@@ -140,7 +142,35 @@ function fermer(): void {
 // Ferme tout de suite et annule les scènes en attente (appui sur l'écran, bouton Retour, nouveau lancer).
 export function closeOmen(): void {
   file = []; // plus rien à enchaîner
+  fermerVerdict(); // efface l'annonce
   fermer(); // efface la scène
+}
+
+// Efface l'annonce Réussite / Échec.
+function fermerVerdict(): void {
+  window.clearTimeout(minuteurVerdict); // annule sa fin automatique
+  if (voile) {
+    voile.hidden = true; // cache le calque
+    voile.className = 'verdict-layer'; // retire les classes
+    voile.replaceChildren(); // vide
+  }
+}
+
+// Affiche l'annonce par-dessus ce qui est déjà à l'écran, sans toucher aux présages.
+function jouerVerdict(sc: Scene, reduit: boolean): void {
+  if (!voile) return; // pas initialisé
+  fermerVerdict(); // repart de zéro
+  voile.className = `verdict-layer${reduit ? ' omen-fixe' : ''}`; // calque de l'annonce
+  voile.appendChild(buildVerdict(sc.win === true, sc.sous ?? '')); // le décor
+  voile.hidden = false; // montre
+  minuteurVerdict = window.setTimeout(fermerVerdict, dureeMs(sc, reduit)); // fin de l'annonce, indépendante des présages
+}
+
+// Durée totale : l'annonce joue en même temps que les présages, qui eux s'enchaînent ; on prend la plus longue.
+export function dureeTotaleMs(scenes: Scene[], reduit: boolean): number {
+  const verdict = Math.max(0, ...scenes.filter((s) => s.kind === 'verdict').map((s) => dureeMs(s, reduit))); // l'annonce
+  const autres = scenes.filter((s) => s.kind !== 'verdict').reduce((a, s) => a + dureeMs(s, reduit), 0); // la suite des présages
+  return Math.max(verdict, autres); // la plus longue des deux
 }
 
 // Tente de jouer la scène en 3D (shaders). Rend false si l'appareil ne sait pas (les dessins plats prennent le relais).
@@ -179,11 +209,7 @@ function suivante(): void {
     return;
   }
   if (sc.kind === 'verdict') {
-    racine.className = `omen omen-verdict${animReduite ? ' omen-fixe' : ''}`; // calque de l'annonce
-    racine.appendChild(buildVerdict(sc.win === true, sc.sous ?? '')); // le décor
-    racine.hidden = false; // montre
-    ouvert = true; // une scène est affichée
-    minuteur = window.setTimeout(suivante, dureeMs(sc)); // fin de l'annonce
+    suivante(); // l'annonce n'a pas sa place dans la file : on passe
     return;
   }
   const kind = sc.kind; // présage ou fête
@@ -218,10 +244,12 @@ function suivante(): void {
 // Joue une ou plusieurs scènes l'une après l'autre. sound = jouer le son ? reduit = l'appareil réduit les animations (image fixe).
 export function playOmens(scenes: Scene[], sound: boolean, reduit: boolean): void {
   if (!racine || scenes.length === 0) return; // rien à jouer
-  file = scenes.slice(); // la file
   avecSon = sound; // son ou non
   animReduite = reduit; // animations réduites ou non
-  suivante(); // lance la première
+  const verdict = scenes.find((s) => s.kind === 'verdict'); // l'annonce, jouée à part et en même temps
+  file = scenes.filter((s) => s.kind !== 'verdict'); // les présages, l'un après l'autre
+  if (verdict) jouerVerdict(verdict, reduit); // par-dessus tout le reste
+  suivante(); // lance le premier présage (ferme proprement s'il n'y en a pas)
 }
 
 // Joue un seul présage (raccourci).
@@ -233,4 +261,11 @@ export function playOmen(kind: OmenKind, sound: boolean, reduit: boolean): void 
 export function initOmens(): void {
   racine = document.getElementById('omen'); // le calque (dans index.html)
   racine?.addEventListener('click', closeOmen); // un appui ferme
+  voile = document.createElement('div'); // calque de l'annonce, créé ici
+  voile.id = 'verdict'; // repère
+  voile.className = 'verdict-layer'; // style
+  voile.hidden = true; // caché au départ
+  voile.setAttribute('aria-live', 'polite'); // annoncé aux lecteurs d'écran
+  voile.addEventListener('click', closeOmen); // un appui ferme tout
+  document.body.appendChild(voile); // dans la page
 }
