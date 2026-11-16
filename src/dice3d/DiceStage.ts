@@ -2,7 +2,7 @@
 // Principe : le résultat est TIRÉ AU SORT ailleurs (src/rules). Cette scène ne fait que l'ANIMER : les dés arrivent du bas de l'écran,
 // rebondissent sur les bords et s'immobilisent exactement sur les faces tirées. Quelques secondes après, ils s'effacent en fondu.
 import {
-  AmbientLight, BoxGeometry, DirectionalLight, DodecahedronGeometry, EdgesGeometry, Group, LineBasicMaterial, LineSegments, Matrix4, Mesh,
+  AmbientLight, DirectionalLight, Group, Matrix4, Mesh,
   MeshBasicMaterial, MeshStandardMaterial, PerspectiveCamera, PlaneGeometry, Quaternion, Scene, SRGBColorSpace, CanvasTexture, Vector3, WebGLRenderer,
   type BufferGeometry,
 } from 'three'; // briques de la 3D
@@ -12,6 +12,7 @@ import { readPalette, type DicePalette } from './colors'; // couleurs lues dans 
 import { CUBE_VALUES, cubeFaces, dodecaFaces, featValuesForFaces, type FaceInfo } from './faces'; // faces des dés
 import { makeLabelTexture } from './labels'; // étiquettes des faces
 import { scatterDice, type DieKind } from './layout'; // répartition des dés posés
+import { roundedPolyhedron } from './rounded'; // formes arrondies
 import { quaternionForFace } from './orientation'; // orientation d'atterrissage
 import { easeOut, flightPosition, impactEvents, planFlight, type Flight, type Walls } from './trajectory'; // trajectoires
 
@@ -26,6 +27,9 @@ const FONDU_MS = 600;
 const CHAMP = 32;
 // Retrait des dés posés par rapport aux bords : la perspective grossit un peu les dés qui se trouvent près du bord.
 const RETRAIT = 0.45;
+// Dureté des angles des dés (plus la valeur est petite, plus les arêtes et les coins sont arrondis).
+const ARRONDI_D12 = 18;
+const ARRONDI_D6 = 12;
 // Hauteur approximative du dessus d'un dé posé (sert à corriger l'effet de perspective sur les bords).
 const HAUTEUR_DES = 1.7;
 // Distance entre le centre d'un dé et le mur au moment du choc.
@@ -38,9 +42,7 @@ const PX_DIVISEUR = 7;
 // Modèle partagé par tous les dés d'un même type (géométrie, matières, faces).
 interface Template {
   body: BufferGeometry; // forme du dé
-  edges: BufferGeometry; // arêtes
   bodyMat: MeshStandardMaterial; // matière du corps
-  edgeMat: LineBasicMaterial; // matière des arêtes
   faces: FaceInfo[]; // faces
   values: FeatFace[]; // valeur écrite sur chaque face
   labels: Map<string, MeshBasicMaterial>; // matière d'étiquette par valeur
@@ -153,15 +155,13 @@ export class DiceStage {
   private buildTemplate(kind: DieKind): Template {
     const p = this.palette; // couleurs
     const feat = kind === 'feat'; // dé du Destin ?
-    const body = feat ? new DodecahedronGeometry(1, 0) : new BoxGeometry(1, 1, 1); // d12 ou cube
     const faces = feat ? dodecaFaces() : cubeFaces(); // faces
+    const body = roundedPolyhedron(faces.map((f) => f.normal), faces[0].center.length(), feat ? ARRONDI_D12 : ARRONDI_D6); // forme aux angles arrondis, faces plates
     const values: FeatFace[] = feat ? featValuesForFaces(faces) : CUBE_VALUES; // valeurs des faces
     const scale = feat ? 1 : 1.5; // échelle (le cube est agrandi pour avoir une taille voisine du d12)
     return {
       body, // forme
-      edges: new EdgesGeometry(body, 15), // arêtes visibles
-      bodyMat: new MeshStandardMaterial({ color: p.body, roughness: 0.38, metalness: 0.05, flatShading: true }), // corps lisse
-      edgeMat: new LineBasicMaterial({ color: p.edge }), // arêtes
+      bodyMat: new MeshStandardMaterial({ color: p.body, roughness: 0.4, metalness: 0.05 }), // corps lisse (ombrage doux : les angles arrondis accrochent la lumière)
       faces, // faces
       values, // valeurs
       labels: new Map(), // matières d'étiquette (créées à la demande)
@@ -197,7 +197,6 @@ export class DiceStage {
     const tpl = this.templates[kind]; // modèle
     const group = new Group(); // objet 3D du dé
     group.add(new Mesh(tpl.body, tpl.bodyMat)); // corps
-    group.add(new LineSegments(tpl.edges, tpl.edgeMat)); // arêtes
     tpl.faces.forEach((f, i) => {
       const etiquette = new Mesh(this.labelGeo(tpl.labelSize), this.labelMaterial(tpl, kind, tpl.values[i])); // étiquette de la face
       etiquette.position.copy(f.center).addScaledVector(f.normal, 0.004); // posée juste au-dessus de la face
@@ -400,9 +399,7 @@ export class DiceStage {
   private disposeTemplates(): void {
     for (const t of Object.values(this.templates)) {
       t.body.dispose(); // forme
-      t.edges.dispose(); // arêtes
       t.bodyMat.dispose(); // matière du corps
-      t.edgeMat.dispose(); // matière des arêtes
       for (const m of t.labels.values()) {
         m.map?.dispose(); // texture
         m.dispose(); // matière

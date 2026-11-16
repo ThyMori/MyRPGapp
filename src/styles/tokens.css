@@ -30,7 +30,6 @@
      (attribut data-dice posé sur <html> par src/ui/prefs.ts). Chiffres et symboles toujours rouges. */
   --die-body: hsl(0 0% 7%); /* corps des dés : noir */
   --die-ink: hsl(2 90% 56%); /* chiffres, œil et runes : rouge vif, lisible sur le noir */
-  --die-edge: hsl(0 0% 34%); /* arêtes : gris, pour lire la forme d'un dé noir */
 
   /* Polices (hébergées dans l'app, importées dans src/main.ts). */
   --font-title: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; /* titres */
@@ -49,7 +48,6 @@
 
 /* Dés blancs : même rouge, un peu plus profond pour garder le contraste sur le blanc. */
 :root[data-dice='white'] {
-  --die-body: hsl(40 22% 95%); /* corps des dés : blanc cassé */
+  --die-body: hsl(44 55% 84%); /* corps des dés : blanc cassé, crème */
   --die-ink: hsl(2 82% 42%); /* chiffres, œil et runes : rouge profond */
-  --die-edge: hsl(40 8% 60%); /* arêtes : gris chaud */
 }

@@ -31,7 +31,6 @@ export function readThreeColor(name: string): Color {
 export interface DicePalette {
   body: Color; // corps des dés (noir ou blanc)
   ink: string; // chiffres et symboles (rouge)
-  edge: Color; // arêtes
 }
 
 // Lit toute la palette.
@@ -39,6 +38,5 @@ export function readPalette(): DicePalette {
   return {
     body: readThreeColor('--die-body'), // corps des dés
     ink: readCss('--die-ink'), // chiffres et symboles
-    edge: readThreeColor('--die-edge'), // arêtes des dés
   };
 }

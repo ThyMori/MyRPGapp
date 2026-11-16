@@ -1,5 +1,9 @@
 # Journal des versions
 
+## 0.2.6 — 2026-11-16
+- Dés blancs couleur crème
+- Angles et arêtes des dés arrondis (faces toujours plates)
+
 ## 0.2.5 — 2026-11-15
 - Service worker : si le serveur répond 404 ou une erreur 5xx, l'app reste affichée depuis le cache (comme hors ligne) ; 9 tests ajoutés
 
