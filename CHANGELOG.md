@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.8.3 — 2026-11-16
+- Les présages et les tau s'animent par-dessus l'annonce Réussite / Échec, qui reste plus longtemps
+
 ## 0.8.2 — 2026-11-16
 - L'annonce Réussite / Échec se joue en même temps et par-dessus les présages et les tau
 

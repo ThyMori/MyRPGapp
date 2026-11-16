@@ -211,7 +211,7 @@ function doRoll(): void {
     renderHistory(); // redessine
     const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches; // animations réduites ?
     const scenes: Scene[] = []; // scènes à jouer, dans l'ordre
-    if (verdictEnabled()) scenes.push({ kind: 'verdict', win: outcome.success, sous: outcome.success ? (outcome.level === 'extraordinaire' ? 'EXTRAORDINAIRE' : outcome.level === 'grande' ? 'GRANDE RÉUSSITE' : '') : '' }); // l'annonce arrive dès que les dés sont immobiles et se joue PAR-DESSUS les présages
+    if (verdictEnabled()) scenes.push({ kind: 'verdict', win: outcome.success, sous: outcome.success ? (outcome.level === 'extraordinaire' ? 'EXTRAORDINAIRE' : outcome.level === 'grande' ? 'GRANDE RÉUSSITE' : '') : '' }); // l'annonce arrive dès que les dés sont immobiles et reste SOUS les présages (ils passent par-dessus) et dure un peu plus longtemps
     if (outcome.eye || outcome.gandalf) scenes.push({ kind: outcome.eye ? 'eye' : 'gandalf' }); // présage : seulement pour le dé du Destin gardé
     const tier = tauTier(outcome.runes, outcome.success); // fête des runes de réussite : 1 sympa, 2 grandiose, 3 épique
     if (tier > 0) scenes.push({ kind: 'tau', tier, n: tauShown(outcome.runes) }); // après le présage s'il y en a un

@@ -20,6 +20,7 @@ export interface Scene {
 
 const DUREE_MS = 2800; // durée de la scène animée
 const VERDICT_MS = 2400; // durée de l'annonce Réussite / Échec
+const MARGE_VERDICT_MS = 1200; // l'annonce reste affichée ce temps de plus que les présages
 const DUREE_FIXE_MS = 1800; // durée si l'appareil réduit les animations : image fixe, sans mouvement
 const NS = 'http://www.w3.org/2000/svg'; // espace de noms SVG
 
@@ -149,6 +150,7 @@ export function closeOmen(): void {
 // Efface l'annonce Réussite / Échec.
 function fermerVerdict(): void {
   window.clearTimeout(minuteurVerdict); // annule sa fin automatique
+  document.body.classList.remove('avec-verdict'); // les présages retrouvent leur pleine opacité
   if (voile) {
     voile.hidden = true; // cache le calque
     voile.className = 'verdict-layer'; // retire les classes
@@ -156,21 +158,23 @@ function fermerVerdict(): void {
   }
 }
 
-// Affiche l'annonce par-dessus ce qui est déjà à l'écran, sans toucher aux présages.
-function jouerVerdict(sc: Scene, reduit: boolean): void {
+// Affiche l'annonce sous les présages (ils se jouent par-dessus elle), sans toucher à leur déroulement.
+function jouerVerdict(sc: Scene, reduit: boolean, totalMs: number): void {
   if (!voile) return; // pas initialisé
   fermerVerdict(); // repart de zéro
   voile.className = `verdict-layer${reduit ? ' omen-fixe' : ''}`; // calque de l'annonce
   voile.appendChild(buildVerdict(sc.win === true, sc.sous ?? '')); // le décor
   voile.hidden = false; // montre
-  minuteurVerdict = window.setTimeout(fermerVerdict, dureeMs(sc, reduit)); // fin de l'annonce, indépendante des présages
+  document.body.classList.add('avec-verdict'); // les présages deviennent translucides pour laisser lire l'annonce dessous
+  minuteurVerdict = window.setTimeout(fermerVerdict, totalMs); // fin de l'annonce : un peu après le dernier présage
 }
 
-// Durée totale : l'annonce joue en même temps que les présages, qui eux s'enchaînent ; on prend la plus longue.
+// Durée totale : les présages s'enchaînent par-dessus l'annonce, qui reste un peu plus longtemps qu'eux.
 export function dureeTotaleMs(scenes: Scene[], reduit: boolean): number {
-  const verdict = Math.max(0, ...scenes.filter((s) => s.kind === 'verdict').map((s) => dureeMs(s, reduit))); // l'annonce
+  const verdict = Math.max(0, ...scenes.filter((s) => s.kind === 'verdict').map((s) => dureeMs(s, reduit))); // durée de base de l'annonce
   const autres = scenes.filter((s) => s.kind !== 'verdict').reduce((a, s) => a + dureeMs(s, reduit), 0); // la suite des présages
-  return Math.max(verdict, autres); // la plus longue des deux
+  if (verdict === 0) return autres; // pas d'annonce : seulement les présages
+  return Math.max(verdict, autres > 0 ? autres + MARGE_VERDICT_MS : 0); // l'annonce dépasse le dernier présage
 }
 
 // Tente de jouer la scène en 3D (shaders). Rend false si l'appareil ne sait pas (les dessins plats prennent le relais).
@@ -248,7 +252,7 @@ export function playOmens(scenes: Scene[], sound: boolean, reduit: boolean): voi
   animReduite = reduit; // animations réduites ou non
   const verdict = scenes.find((s) => s.kind === 'verdict'); // l'annonce, jouée à part et en même temps
   file = scenes.filter((s) => s.kind !== 'verdict'); // les présages, l'un après l'autre
-  if (verdict) jouerVerdict(verdict, reduit); // par-dessus tout le reste
+  if (verdict) jouerVerdict(verdict, reduit, dureeTotaleMs(scenes, reduit)); // dessous les présages
   suivante(); // lance le premier présage (ferme proprement s'il n'y en a pas)
 }
 
