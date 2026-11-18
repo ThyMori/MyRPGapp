@@ -61,7 +61,9 @@ export const NB_ARMURES = 3; // lignes d'armure
 export const NB_RAPPEL = 99; // plafond des compteurs (aventure, trésor…)
 
 // Les champs de texte court de la partie « Personnage ».
-export const INFO_KEYS = ['culture', 'avantage', 'vocation', 'niveauVie', 'garant', 'particularites', 'voieOmbre', 'defauts'] as const;
+export const INFO_KEYS = ['culture', 'avantage', 'vocation', 'niveauVie', 'garant', 'voieOmbre'] as const;
+export const NB_PARTICULARITES = 3; // deux de la culture + une de la vocation
+export const NB_DEFAUTS = 2; // lignes de défauts
 export type InfoKey = (typeof INFO_KEYS)[number];
 
 // Une ligne de l'attirail de guerre.
@@ -115,6 +117,8 @@ export interface Character {
   modifieLe: number; // date de dernière modification (ms)
   nom: string; // nom du personnage
   info: Record<InfoKey, string>; // champs de la partie « Personnage »
+  particularites: string[]; // particularités choisies (NB_PARTICULARITES lignes)
+  defauts: string[]; // défauts choisis (NB_DEFAUTS lignes)
   histoire: string; // histoire (texte long)
   equipement: string; // équipement de voyage (texte long)
   recompenses: string; // récompenses et vertus (texte long)

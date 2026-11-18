@@ -22,6 +22,49 @@ export function textField(label: string, valeur: string, onChange: (v: string) =
   return lab;
 }
 
+// Un groupe d'options d'un menu déroulant : titre facultatif (affiché comme en-tête de groupe) et liste de choix.
+export interface Groupe {
+  titre?: string; // titre du groupe
+  options: string[]; // choix
+}
+
+// Remplit un <select> avec une entrée vide, puis les groupes. Une valeur absente des listes (ancienne saisie) est gardée en dernier choix : rien n'est perdu.
+function remplir(sel: HTMLSelectElement, valeur: string, groupes: Groupe[], vide: string): void {
+  sel.appendChild(new Option(vide, '')); // entrée vide : rien choisi
+  for (const g of groupes) {
+    const parent: HTMLElement = g.titre ? sel.appendChild(h('optgroup')) : sel; // groupe ou menu lui-même
+    if (g.titre) (parent as HTMLOptGroupElement).label = g.titre; // titre du groupe
+    for (const o of g.options) parent.appendChild(new Option(o, o)); // un choix (textContent, jamais de HTML)
+  }
+  if (valeur && !groupes.some((g) => g.options.includes(valeur))) sel.appendChild(new Option(`${valeur} (hors liste)`, valeur)); // valeur ancienne conservée
+  sel.value = valeur; // sélectionne la valeur actuelle
+}
+
+// Menu déroulant avec son libellé. onChange reçoit la valeur choisie ('' si on vide).
+export function selectField(label: string, valeur: string, groupes: Groupe[], onChange: (v: string) => void, vide = '—'): HTMLElement {
+  const lab = h('label', 'field field-select'); // enveloppe
+  lab.appendChild(h('span', 'field-label', label)); // libellé
+  const sel = h('select'); // menu
+  remplir(sel, valeur, groupes, vide);
+  sel.addEventListener('change', () => onChange(sel.value)); // à chaque choix
+  lab.appendChild(sel);
+  return lab;
+}
+
+// Menu « ajouter » : un choix appelle onPick puis le menu revient à son titre (sert à compléter un texte libre).
+export function pickField(label: string, groupes: Groupe[], onPick: (v: string) => void): HTMLElement {
+  const lab = h('label', 'field field-select'); // enveloppe
+  lab.appendChild(h('span', 'field-label', label)); // libellé
+  const sel = h('select'); // menu
+  remplir(sel, '', groupes, 'Ajouter…');
+  sel.addEventListener('change', () => {
+    if (sel.value) onPick(sel.value); // transmet le choix
+    sel.value = ''; // revient au titre
+  });
+  lab.appendChild(sel);
+  return lab;
+}
+
 // Champ de texte long (qui s'agrandit seul) avec son libellé.
 export function areaField(label: string, valeur: string, onChange: (v: string) => void, max = 2000): HTMLElement {
   const lab = h('label', 'field'); // enveloppe

@@ -1,5 +1,5 @@
 // Remise en ordre d'une fiche lue dans le stockage (qui peut être vide, ancienne ou abîmée). Logique pure.
-import { ATTRS, ATTR_MAX, ATTR_MIN, COMBAT_SKILLS, INFO_KEYS, NB_ARMES, NB_ARMURES, NB_RAPPEL, RANG_MAX, SKILLS, type Arme, type Armure, type Character, type InfoKey } from './model'; // modèle
+import { ATTRS, ATTR_MAX, ATTR_MIN, COMBAT_SKILLS, INFO_KEYS, NB_ARMES, NB_ARMURES, NB_DEFAUTS, NB_PARTICULARITES, NB_RAPPEL, RANG_MAX, SKILLS, type Arme, type Armure, type Character, type InfoKey } from './model'; // modèle
 
 // Texte : une chaîne, coupée à max caractères (vide sinon).
 export function texte(v: unknown, max = 200): string {
@@ -26,6 +26,8 @@ export function emptyCharacter(id: string, now: number): Character {
     modifieLe: now,
     nom: '',
     info,
+    particularites: Array.from({ length: NB_PARTICULARITES }, () => ''),
+    defauts: Array.from({ length: NB_DEFAUTS }, () => ''),
     histoire: '',
     equipement: '',
     recompenses: '',
@@ -49,6 +51,14 @@ export function emptyCharacter(id: string, now: number): Character {
   };
 }
 
+// Liste de n textes courts : relit un tableau ; si absent, reprend l'ancien champ texte libre dans la première case (rien n'est perdu).
+function liste(v: unknown, ancien: unknown, n: number): string[] {
+  const src = Array.isArray(v) ? v : []; // tableau enregistré, s'il existe
+  const out = Array.from({ length: n }, (_, i) => texte(src[i], 60)); // n cases
+  if (!Array.isArray(v) && typeof ancien === 'string' && ancien.trim() !== '') out[0] = texte(ancien.trim(), 60); // ancien texte libre
+  return out;
+}
+
 // Reconstruit une fiche valide à partir de n'importe quelle valeur. Rend null si elle n'a même pas d'identifiant.
 export function sanitizeCharacter(raw: unknown): Character | null {
   const r = obj(raw); // vue sûre
@@ -70,6 +80,8 @@ export function sanitizeCharacter(raw: unknown): Character | null {
     modifieLe: entier(r.modifieLe, 0, Number.MAX_SAFE_INTEGER, 0),
     nom: texte(r.nom, 80),
     info: Object.fromEntries(INFO_KEYS.map((k) => [k, texte(info[k], 120)])) as Record<InfoKey, string>,
+    particularites: liste(r.particularites, info.particularites, NB_PARTICULARITES),
+    defauts: liste(r.defauts, info.defauts, NB_DEFAUTS),
     histoire: texte(r.histoire, 4000),
     equipement: texte(r.equipement, 2000),
     recompenses: texte(r.recompenses, 2000),

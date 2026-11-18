@@ -1,6 +1,7 @@
 // Écran « Personnages » : liste des fiches, éditeur à sections repliables, lien avec le lanceur de dés.
 // Tout est gardé sur l'appareil (src/state/characters.ts). L'enregistrement est automatique à chaque modification.
-import { ATTRS, ATTR_MAX, ATTR_MIN, COMBAT_SKILLS, INFO_KEYS, RANG_MAX, SKILLS, type Character, type InfoKey } from '../characters/model'; // modèle
+import { ATTRS, ATTR_MAX, ATTR_MIN, COMBAT_SKILLS, NB_DEFAUTS, NB_PARTICULARITES, RANG_MAX, SKILLS, type Character, type InfoKey } from '../characters/model'; // modèle
+import { CULTURES, GARANTS, NIVEAUX_VIE, RECOMPENSES_DEPART, VERTUS_COMMUNES, VOCATIONS, VOIES, defautsPour, findCulture, particularitesPour, reglagesCulture, reglagesVocation } from '../characters/lists'; // listes du livre
 import { rollSetup, seuilReussite, totalParade, totalProtection } from '../characters/derive'; // calculs
 import { emptyCharacter, sanitizeCharacter } from '../characters/sanitize'; // fiches
 import { loadCharacters, saveCharacters } from '../state/characters'; // stockage
@@ -8,7 +9,7 @@ import { loadJson, saveJson } from '../state/storage'; // dernière fiche ouvert
 import { byId } from '../ui/dom'; // éléments
 import { openDialog } from '../ui/dialogs'; // fenêtres
 import { onScreenShown, showScreen } from '../ui/nav'; // navigation
-import { areaField, checkField, counter, dots, h, scale, section, textField } from '../ui/sheetFields'; // champs
+import { areaField, checkField, counter, dots, h, pickField, scale, section, selectField, textField, type Groupe } from '../ui/sheetFields'; // champs
 import { showToast } from '../ui/toast'; // messages
 import { setRollInput } from './roller'; // règle le lanceur
 
@@ -18,9 +19,7 @@ const LABELS_INFO: Record<InfoKey, string> = {
   vocation: 'Vocation',
   niveauVie: 'Niveau de vie',
   garant: 'Garant',
-  particularites: 'Particularités',
   voieOmbre: "Voie de l'Ombre",
-  defauts: 'Défauts',
 }; // libellés des champs « Personnage »
 
 let liste: Character[] = []; // toutes les fiches
@@ -140,9 +139,29 @@ function construireEditeur(c: Character): HTMLElement {
   nom.classList.add('sheet-name');
   racine.appendChild(nom);
 
-  // Personnage
-  const infos = INFO_KEYS.map((k) => textField(LABELS_INFO[k], c.info[k], (v) => { c.info[k] = v; modifie(); })); // champs courts
-  racine.appendChild(section('Personnage', true, ...infos, areaField('Histoire', c.histoire, (v) => { c.histoire = v; modifie(); }, 4000)));
+  // Personnage : des menus déroulants alimentés par les listes du livre
+  const liste = (k: InfoKey, options: string[], apres?: (v: string) => void) => selectField(LABELS_INFO[k], c.info[k], [{ options }], (v) => { c.info[k] = v; apres?.(v); modifie(); }); // menu d'un champ « Personnage »
+  const culture = liste('culture', CULTURES.map((x) => x.nom), (v) => {
+    const r = reglagesCulture(v); // avantage et niveau de vie liés à la culture
+    if (r) { c.info.avantage = r.avantage; c.info.niveauVie = r.niveauVie; } // les remplit (modifiables ensuite)
+    reconstruire(); // redessine : les particularités proposées changent
+  });
+  const vocation = liste('vocation', VOCATIONS.map((x) => x.nom), (v) => {
+    const r = reglagesVocation(v); // voie de l'Ombre et particularité liées à la vocation
+    if (r) { c.info.voieOmbre = r.voie; c.particularites[NB_PARTICULARITES - 1] = r.particularite; } // les remplit (modifiables ensuite)
+    reconstruire(); // redessine : les défauts proposés changent
+  });
+  const lignesPart = Array.from({ length: NB_PARTICULARITES }, (_, i) => {
+    const derniere = i === NB_PARTICULARITES - 1; // la dernière vient de la vocation
+    return selectField(derniere ? 'Particularité de vocation' : `Particularité ${i + 1}`, c.particularites[i], [{ options: derniere ? VOCATIONS.map((x) => x.particularite) : particularitesPour(c.info.culture) }], (v) => { c.particularites[i] = v; modifie(); });
+  }); // trois menus de particularités
+  const groupesDefauts: Groupe[] = findVoie(c.info.voieOmbre) ? [{ options: defautsPour(c.info.voieOmbre) }] : VOIES.map((x) => ({ titre: x.nom, options: x.defauts })); // défauts de la voie choisie, sinon tous groupés par voie
+  const lignesDef = Array.from({ length: NB_DEFAUTS }, (_, i) => selectField(`Défaut ${i + 1}`, c.defauts[i], groupesDefauts, (v) => { c.defauts[i] = v; modifie(); })); // menus de défauts
+  racine.appendChild(section('Personnage', true,
+    culture, liste('avantage', CULTURES.map((x) => x.avantage)), vocation, liste('niveauVie', NIVEAUX_VIE), liste('garant', GARANTS),
+    ...lignesPart, liste('voieOmbre', VOIES.map((x) => x.nom), () => reconstruire()), ...lignesDef,
+    areaField('Histoire', c.histoire, (v) => { c.histoire = v; modifie(); }, 4000),
+  ));
 
   // Compteurs de progression
   const cpt = (label: string, get: () => number, set: (v: number) => void, aide?: string) => counter(label, get(), 0, 99, (v) => { set(v); modifie(); }, aide); // compteur 0..99
@@ -206,7 +225,15 @@ function construireEditeur(c: Character): HTMLElement {
   tg.append(checkField('Épuisé', c.etats.epuise, (v) => { c.etats.epuise = v; modifie(); }), checkField('Mélancolique', c.etats.melancolique, (v) => { c.etats.melancolique = v; modifie(); }), checkField('Blessé', c.etats.blesse, (v) => { c.etats.blesse = v; modifie(); }));
 
   // Récompenses et vertus
-  racine.appendChild(section('Récompenses et Vertus', false, areaField('Récompenses et Vertus', c.recompenses, (v) => { c.recompenses = v; modifie(); })));
+  const zoneRv = areaField('Récompenses et Vertus', c.recompenses, (v) => { c.recompenses = v; modifie(); }); // texte libre
+  const ajoute = (v: string) => {
+    const ta = zoneRv.querySelector('textarea')!; // zone de texte
+    ta.value = ta.value.trim() ? `${ta.value.trim()}\n${v}` : v; // ajoute une ligne
+    ta.dispatchEvent(new Event('input')); // enregistre et agrandit
+  }; // ajoute un choix au texte
+  const culRv = findCulture(c.info.culture); // culture du héros
+  const groupesVertus: Groupe[] = [{ titre: 'Vertus communes', options: VERTUS_COMMUNES }, ...(culRv ? [{ titre: `Vertus : ${culRv.nom}`, options: culRv.vertus }] : CULTURES.map((x) => ({ titre: `Vertus : ${x.nom}`, options: x.vertus })))]; // vertus communes + celles de la culture (toutes si aucune culture)
+  racine.appendChild(section('Récompenses et Vertus', false, zoneRv, pickField('Ajouter une Récompense', [{ options: RECOMPENSES_DEPART }], ajoute), pickField('Ajouter une Vertu', groupesVertus, ajoute)));
 
   // Combat
   const cb: HTMLElement[] = [h('h4', 'skill-group', 'Compétences de combat (SR Corps)')];
@@ -244,6 +271,22 @@ function construireEditeur(c: Character): HTMLElement {
   // Équipement et trésor
   racine.appendChild(section('Équipement de voyage', false, areaField('Équipement de voyage', c.equipement, (v) => { c.equipement = v; modifie(); }), counter('Trésor', c.tresor, 0, 9999, (v) => { c.tresor = v; modifie(); })));
   return racine;
+}
+
+// Cherche une voie de l'Ombre par son nom.
+function findVoie(nom: string) {
+  return VOIES.find((v) => v.nom === nom); // voie ou undefined
+}
+
+// Redessine la fiche en gardant les sections ouvertes et la position de défilement.
+function reconstruire(): void {
+  if (!ouvert) return; // rien d'ouvert
+  const zone = byId('character-sheet'); // zone de la fiche
+  const ouvertes = [...zone.querySelectorAll('details')].map((d) => d.open); // sections ouvertes
+  const haut = zone.scrollTop; // position
+  zone.replaceChildren(construireEditeur(ouvert)); // reconstruit
+  zone.querySelectorAll('details').forEach((d, i) => { d.open = ouvertes[i] ?? d.open; }); // rouvre les mêmes
+  zone.scrollTop = haut; // revient à la même position
 }
 
 // Une carte de la liste.

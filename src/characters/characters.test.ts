@@ -80,3 +80,44 @@ describe('derive', () => {
     expect(rollSetup(emptyCharacter('a', 0), 'nimporte')).toBeNull();
   });
 });
+
+describe('listes du livre', () => {
+  it('chaque culture a 8 particularités et 6 vertus, sans doublon', async () => {
+    const { CULTURES } = await import('./lists');
+    expect(CULTURES).toHaveLength(6);
+    for (const c of CULTURES) {
+      expect(c.particularites).toHaveLength(8);
+      expect(new Set(c.particularites).size).toBe(8);
+      expect(c.vertus).toHaveLength(6);
+    }
+  });
+  it('vocations : six, avec une voie de l\'Ombre existante', async () => {
+    const { VOCATIONS, VOIES } = await import('./lists');
+    expect(VOCATIONS).toHaveLength(6);
+    for (const v of VOCATIONS) expect(VOIES.some((x) => x.nom === v.voie)).toBe(true);
+    expect(new Set(VOCATIONS.map((v) => v.voie)).size).toBe(6);
+  });
+  it('niveau de vie de chaque culture est dans la liste des six niveaux', async () => {
+    const { CULTURES, NIVEAUX_VIE } = await import('./lists');
+    for (const c of CULTURES) expect(NIVEAUX_VIE).toContain(c.niveauVie);
+  });
+  it('réglages liés : culture → avantage + niveau de vie ; vocation → voie + particularité', async () => {
+    const { reglagesCulture, reglagesVocation } = await import('./lists');
+    expect(reglagesCulture('Hobbits de la Comté')).toEqual({ avantage: 'Bon sens hobbit', niveauVie: 'Courant' });
+    expect(reglagesVocation('Érudit')).toEqual({ voie: 'Attrait des secrets', particularite: 'Rimes de savoir' });
+    expect(reglagesCulture('')).toBeNull();
+    expect(reglagesVocation('Inconnue')).toBeNull();
+  });
+  it('particularités et défauts proposés : ceux de la culture / voie, sinon tous', async () => {
+    const { particularitesPour, defautsPour } = await import('./lists');
+    expect(particularitesPour('Rôdeurs du Nord')).toContain('Sincère');
+    expect(particularitesPour('').length).toBeGreaterThan(8);
+    expect(defautsPour('Malédiction de vengeance')).toEqual(['Brutal', 'Rancunier']);
+    expect(defautsPour('').length).toBeGreaterThan(10);
+  });
+  it('ancien texte libre de particularités / défauts repris dans la première case', () => {
+    const c = sanitizeCharacter({ id: 'a', info: { particularites: 'Têtu comme une mule', defauts: 'Rancunier' } })!;
+    expect(c.particularites).toEqual(['Têtu comme une mule', '', '']);
+    expect(c.defauts).toEqual(['Rancunier', '']);
+  });
+});

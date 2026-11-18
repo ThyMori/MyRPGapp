@@ -14,6 +14,8 @@ TypeScript + Vite + Vitest, Three.js pour les dés, polices @fontsource auto-hé
 - Dés : calque plein écran `#dice-canvas` (src/dice3d/DiceStage.ts). Trajectoires, répartition et préférences sont des fonctions pures testées (trajectory.ts, layout.ts, state/prefs.ts). Dés noirs ou blancs = `data-dice` sur `<html>`, chiffres toujours rouges. Sons synthétisés (src/audio), jamais de fichier son. Présages (Œil / Rune sur le dé gardé) : src/ui/omens.ts + omens.css, couleurs `--omen-*`. Rendu 3D des présages : src/omen3d/ (shaders GLSL, chronologie et qualité pures testées), repli SVG.
 - Tout nouveau fichier public est ajouté à la liste du cache de `public/sw.js`.
 
+- Listes de choix de la fiche (`src/characters/lists.ts`) : uniquement des noms issus du livre, jamais de description ni de texte de règle.
+
 ## Vocabulaire
 Dé du Destin, Dés de Maîtrise, Épuisé, Mélancolique, Œil de Sauron, Rune de Gandalf, Favorisé / Défavorisé, SR (seuil de réussite). À confirmer avec le livre.
 

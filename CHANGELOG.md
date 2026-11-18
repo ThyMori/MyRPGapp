@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.10.0 — 2026-11-18
+- Fiches : menus déroulants issus du livre (culture, vocation, particularités, défauts…)
+
 ## 0.9.2 — 2026-11-18
 - Fiches : écriture manuscrite, cases cochées d'une croix au crayon, états lisibles
 
