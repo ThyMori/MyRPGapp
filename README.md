@@ -39,6 +39,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 | Version | Fonction |
 |---|---|
 | 0.10.1 | Fiches : « Autre (saisie libre)… » dans chaque menu (valeurs hors livre) ; Retour depuis le lanceur ouvert par une compétence ramène à la fiche, au même endroit |
+| 0.11.0 | Fiches : bouton « i » (détail court + page du livre) à côté de chaque champ à menu et des listes de Vertus / Récompenses ; défauts des voies de l’Ombre corrigés (4 par voie, table du livre) |
 | 0.10.0 | Fiches : menus déroulants alimentés par le livre (culture, avantage culturel, vocation, niveau de vie, garant, 3 particularités, voie de l'Ombre, 2 défauts, ajout de récompenses et de vertus) ; la culture remplit avantage et niveau de vie, la vocation remplit voie de l'Ombre et particularité |
 | 0.9.2 | Fiches : tout ce qui est rempli en écriture manuscrite (Caveat), cases cochées d'une croix au crayon, états lisibles sur le papier |
 | 0.9.1 | Fiches de personnages : look de la fiche papier (parchemin crème, encre rouge, cadres, cercles et cases rouges, titres Almendra SC, texte Gentium Plus, deux polices libres OFL hébergées dans l'app) |
