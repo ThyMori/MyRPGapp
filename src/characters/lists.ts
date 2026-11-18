@@ -26,12 +26,12 @@ export interface Voie {
 }
 
 export const VOIES: Voie[] = [
-  { nom: 'Attrait du pouvoir', defauts: ['Amer', 'Arrogant', 'Présomptueux', 'Tyrannique'] },
-  { nom: 'Attrait des secrets', defauts: ['Calculateur', 'Fourbe', 'Hautain', 'Méprisant'] },
-  { nom: 'Folie itinérante', defauts: ['Distrait', 'Fainéant', 'Indifférent', 'Poltron'] },
-  { nom: 'Mal du Dragon', defauts: ['Avide', 'Cruel', 'Malhonnête', 'Meurtrier', 'Suspicieux', 'Voleur'] },
-  { nom: 'Malédiction de vengeance', defauts: ['Brutal', 'Rancunier'] },
-  { nom: 'Voie du désespoir', defauts: ['Craintif', 'Hésitant', 'Honteux', 'Troublé'] },
+  { nom: 'Attrait du pouvoir', defauts: ['Amer', 'Arrogant', 'Présomptueux', 'Tyrannique'] }, // table p.140 du livre
+  { nom: 'Attrait des secrets', defauts: ['Hautain', 'Méprisant', 'Calculateur', 'Fourbe'] },
+  { nom: 'Folie itinérante', defauts: ['Fainéant', 'Distrait', 'Indifférent', 'Poltron'] },
+  { nom: 'Mal du Dragon', defauts: ['Avide', 'Suspicieux', 'Malhonnête', 'Voleur'] },
+  { nom: 'Malédiction de vengeance', defauts: ['Rancunier', 'Brutal', 'Cruel', 'Meurtrier'] },
+  { nom: 'Voie du désespoir', defauts: ['Troublé', 'Hésitant', 'Honteux', 'Craintif'] },
 ];
 
 // Une vocation : sa particularité supplémentaire et sa voie de l'Ombre.

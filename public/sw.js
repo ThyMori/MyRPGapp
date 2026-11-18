@@ -1,7 +1,7 @@
 // Service worker : permet à l'app de démarrer sans réseau.
 // Stratégie « réseau d'abord » : on prend toujours la dernière version en ligne, et le cache ne sert qu'en secours.
 // La ligne VERSION est mise à jour par scripts/bump-version.mjs (ne pas la modifier à la main).
-const VERSION = '0.10.1';
+const VERSION = '0.11.0';
 // Nom du cache : change à chaque version, ce qui supprime automatiquement les anciens.
 const CACHE = 'myrpgapp-' + VERSION;
 // Fichiers au nom fixe à garder dès l'installation. Les fichiers au nom variable (assets/…) sont mis en cache au fil de l'eau.

@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.11.0 — 2026-11-18
+- Fiches : bouton « i » d'information (résumés de ma main + page du livre) ; défauts des voies de l'Ombre corrigés selon la table du livre
+
 ## 0.10.1 — 2026-11-18
 - Fiches : saisie libre dans les menus ; Retour depuis le lanceur ramène à la fiche
 

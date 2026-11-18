@@ -1,5 +1,8 @@
 // Petits constructeurs de champs pour la fiche de personnage. Rien n'est jamais écrit avec innerHTML : tout passe par textContent / value.
 
+import { detailPour, type Categorie } from '../characters/details'; // résumés des boutons « i »
+import { montrerInfos, type EntreeInfo } from './infoDialog'; // fenêtre d'information
+
 // Crée un élément avec classe et texte.
 export function h<K extends keyof HTMLElementTagNameMap>(tag: K, classe = '', texte?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag); // l'élément
@@ -40,12 +43,32 @@ function remplir(sel: HTMLSelectElement, groupes: Groupe[], vide: string): void 
 
 const AUTRE = '__autre__'; // valeur interne du choix « saisie libre »
 
+// Bouton « i » : appelle onClic (accessible, zone tactile suffisante).
+function boutonInfo(label: string, onClic: () => void): HTMLButtonElement {
+  const b = h('button', 'info-btn', 'i'); // bouton rond
+  b.type = 'button';
+  b.setAttribute('aria-label', `Détail : ${label}`); // lecteur d'écran
+  b.addEventListener('click', onClic); // ouvre la fenêtre
+  return b;
+}
+
 // Menu déroulant avec son libellé. Le dernier choix, « Autre… », ouvre un champ pour écrire une valeur qui n'est pas dans le livre.
 // Une valeur déjà enregistrée hors des listes s'affiche directement dans ce champ. onChange reçoit la valeur ('' si vide).
-export function selectField(label: string, valeur: string, groupes: Groupe[], onChange: (v: string) => void, vide = '—'): HTMLElement {
-  const lab = h('label', 'field field-select'); // enveloppe
-  lab.appendChild(h('span', 'field-label', label)); // libellé
+// Si categorie est donnée, un bouton « i » explique la valeur choisie.
+export function selectField(label: string, valeur: string, groupes: Groupe[], onChange: (v: string) => void, vide = '—', categorie?: Categorie): HTMLElement {
+  const lab = h('div', 'field field-select'); // enveloppe
+  const entete = h('div', 'field-head'); // ligne libellé + « i »
+  entete.appendChild(h('span', 'field-label', label)); // libellé
+  let courant = valeur; // valeur affichée en ce moment
+  if (categorie) entete.appendChild(boutonInfo(label, () => {
+    const det = detailPour(categorie, courant); // détail de la valeur
+    if (det) montrerInfos(courant, [{ texte: det.resume, page: det.page }]); // valeur du livre
+    else if (courant) montrerInfos(courant, [{ texte: 'Valeur personnelle : elle n’est pas dans le livre, donc pas de détail ici.' }]); // saisie libre
+    else montrerInfos(label, [{ texte: 'Choisis une valeur dans le menu pour voir son détail.' }]); // rien choisi
+  }));
+  lab.appendChild(entete);
   const sel = h('select'); // menu
+  sel.setAttribute('aria-label', label); // nom accessible
   remplir(sel, groupes, vide);
   sel.appendChild(new Option('Autre (saisie libre)…', AUTRE)); // dernier choix
   const libre = h('input', 'field-libre'); // champ de saisie libre
@@ -57,19 +80,31 @@ export function selectField(label: string, valeur: string, groupes: Groupe[], on
   if (valeur && !connue) { sel.value = AUTRE; libre.value = valeur; } // valeur personnelle : affichée dans le champ
   else { sel.value = valeur; libre.hidden = true; } // valeur de la liste (ou vide)
   sel.addEventListener('change', () => {
-    if (sel.value === AUTRE) { libre.hidden = false; libre.focus(); onChange(libre.value); } // ouvre la saisie libre
-    else { libre.hidden = true; onChange(sel.value); } // choix de la liste
+    if (sel.value === AUTRE) { libre.hidden = false; libre.focus(); courant = libre.value; onChange(libre.value); } // ouvre la saisie libre
+    else { libre.hidden = true; courant = sel.value; onChange(sel.value); } // choix de la liste
   });
-  libre.addEventListener('input', () => onChange(libre.value)); // à chaque frappe
+  libre.addEventListener('input', () => { courant = libre.value; onChange(libre.value); }); // à chaque frappe
   lab.append(sel, libre);
   return lab;
 }
 
 // Menu « ajouter » : un choix appelle onPick puis le menu revient à son titre (sert à compléter un texte libre).
-export function pickField(label: string, groupes: Groupe[], onPick: (v: string) => void): HTMLElement {
-  const lab = h('label', 'field field-select'); // enveloppe
-  lab.appendChild(h('span', 'field-label', label)); // libellé
+// Si categorieDe est donnée, un bouton « i » liste le détail de toutes les options du menu.
+export function pickField(label: string, groupes: Groupe[], onPick: (v: string) => void, categorieDe?: (v: string) => Categorie): HTMLElement {
+  const lab = h('div', 'field field-select'); // enveloppe
+  const entete = h('div', 'field-head'); // ligne libellé + « i »
+  entete.appendChild(h('span', 'field-label', label)); // libellé
+  if (categorieDe) entete.appendChild(boutonInfo(label, () => {
+    const entrees: EntreeInfo[] = []; // une entrée par option connue
+    for (const g of groupes) for (const o of g.options) {
+      const det = detailPour(categorieDe(o), o); // détail de l'option
+      if (det) entrees.push({ nom: o, texte: det.resume, page: det.page });
+    }
+    montrerInfos(label, entrees); // affiche la liste
+  }));
+  lab.appendChild(entete);
   const sel = h('select'); // menu
+  sel.setAttribute('aria-label', label); // nom accessible
   remplir(sel, groupes, 'Ajouter…');
   sel.addEventListener('change', () => {
     if (sel.value) onPick(sel.value); // transmet le choix

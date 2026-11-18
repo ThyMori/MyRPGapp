@@ -112,7 +112,7 @@ describe('listes du livre', () => {
     const { particularitesPour, defautsPour } = await import('./lists');
     expect(particularitesPour('Rôdeurs du Nord')).toContain('Sincère');
     expect(particularitesPour('').length).toBeGreaterThan(8);
-    expect(defautsPour('Malédiction de vengeance')).toEqual(['Brutal', 'Rancunier']);
+    expect(defautsPour('Malédiction de vengeance')).toEqual(['Rancunier', 'Brutal', 'Cruel', 'Meurtrier']);
     expect(defautsPour('').length).toBeGreaterThan(10);
   });
   it('ancien texte libre de particularités / défauts repris dans la première case', () => {

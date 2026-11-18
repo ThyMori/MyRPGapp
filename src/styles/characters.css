@@ -564,3 +564,53 @@
   background: var(--paper);
   color: var(--ink-text);
 }
+
+/* Boutons « i » et fenêtre de détail. */
+#screen-characters .field-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.info-btn {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1.5px solid var(--ink-red);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-red);
+  font: italic 700 0.95rem/1 var(--font-sheet);
+  cursor: pointer;
+  position: relative;
+}
+.info-btn::after {
+  /* zone tactile élargie à 44 px sans changer l'aspect */
+  content: '';
+  position: absolute;
+  inset: -0.6rem;
+}
+.info-btn:focus-visible {
+  outline: 2px solid var(--ink-red-deep);
+  outline-offset: 2px;
+}
+.info-item {
+  margin-bottom: 0.8rem;
+}
+.info-nom {
+  display: block;
+}
+.info-texte {
+  margin: 0.15rem 0;
+}
+.info-page,
+.info-note {
+  color: var(--text-dim, inherit);
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+.info-body {
+  max-height: 60dvh;
+  overflow-y: auto;
+}
+.info-note{margin-top:.6rem}
