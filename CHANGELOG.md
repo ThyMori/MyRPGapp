@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.9.2 — 2026-11-18
+- Fiches : écriture manuscrite, cases cochées d'une croix au crayon, états lisibles
+
 ## 0.9.1 — 2026-11-16
 - Fiches de personnages : look de la fiche papier (parchemin, encre rouge, polices)
 

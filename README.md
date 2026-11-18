@@ -38,6 +38,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.9.2 | Fiches : tout ce qui est rempli en écriture manuscrite (Caveat), cases cochées d'une croix au crayon, états lisibles sur le papier |
 | 0.9.1 | Fiches de personnages : look de la fiche papier (parchemin crème, encre rouge, cadres, cercles et cases rouges, titres Almendra SC, texte Gentium Plus, deux polices libres OFL hébergées dans l'app) |
 | 0.9.0 | **Fiches de personnages** (appareil seulement) : liste, création, duplication, suppression avec confirmation, éditeur à sections repliables, enregistrement automatique, lien avec le lanceur (toucher une compétence) |
 | 0.8.1 | Annonce « RÉUSSITE » (or) / « ÉCHEC » (rouge) sobre et silencieuse, en police lisible, dès que les dés sont immobiles ; retrait du style arcade et des voix de 0.7.0 / 0.8.0 ; réglage dans le menu ⚙ |
