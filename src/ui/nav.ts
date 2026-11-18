@@ -25,9 +25,12 @@ export function currentScreen(): ScreenId {
   return courant; // état courant
 }
 
+let retourVers: ScreenId | null = null; // écran où « Retour » ramène (ex. la fiche après un lancer depuis une compétence)
+
 // Affiche un écran, met à jour le titre, le menu actif et les actions de l'en-tête, et mémorise le choix.
-export function showScreen(id: ScreenId): void {
+export function showScreen(id: ScreenId, retour: ScreenId | null = null): void {
   courant = id; // nouvel écran
+  retourVers = retour; // écran d'origine : « Retour » y ramène (null si on arrive par le menu)
   for (const s of all<HTMLElement>('.screen')) s.hidden = s.dataset.screen !== id; // montre celui-là, cache les autres
   for (const b of all<HTMLElement>('.nav-item')) {
     if (b.dataset.screen === id) b.setAttribute('aria-current', 'page'); // entrée active
@@ -84,6 +87,7 @@ function surRetour(): void {
     menuOpen: isMenuOpen(), // menu ouvert ?
     drawerOpen: isDrawerOpen(), // tiroir ouvert ?
     characterOpen: isCharacterOpen(), // fiche ouverte ?
+    returnTo: retourVers, // écran d'origine ?
     screen: courant, // écran affiché
     homeScreen: HOME_SCREEN, // écran d'accueil
     exitArmed: sortieArmee, // avertissement déjà donné ?
@@ -107,6 +111,10 @@ function surRetour(): void {
       break;
     case 'close-character':
       closeCharacter(); // retour à la liste des personnages
+      regarder(); // reprend la garde
+      break;
+    case 'return-to-origin':
+      showScreen(retourVers!); // retourne à la fiche d'où l'on vient
       regarder(); // reprend la garde
       break;
     case 'go-home':

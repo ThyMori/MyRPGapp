@@ -38,6 +38,7 @@ Fixe l'adresse AVANT d'installer l'app sur des téléphones.
 
 | Version | Fonction |
 |---|---|
+| 0.10.1 | Fiches : « Autre (saisie libre)… » dans chaque menu (valeurs hors livre) ; Retour depuis le lanceur ouvert par une compétence ramène à la fiche, au même endroit |
 | 0.10.0 | Fiches : menus déroulants alimentés par le livre (culture, avantage culturel, vocation, niveau de vie, garant, 3 particularités, voie de l'Ombre, 2 défauts, ajout de récompenses et de vertus) ; la culture remplit avantage et niveau de vie, la vocation remplit voie de l'Ombre et particularité |
 | 0.9.2 | Fiches : tout ce qui est rempli en écriture manuscrite (Caveat), cases cochées d'une croix au crayon, états lisibles sur le papier |
 | 0.9.1 | Fiches de personnages : look de la fiche papier (parchemin crème, encre rouge, cadres, cercles et cases rouges, titres Almendra SC, texte Gentium Plus, deux polices libres OFL hébergées dans l'app) |
@@ -118,8 +119,8 @@ Le résultat est **tiré** par `crypto.getRandomValues`. La 3D ne fait qu'**anim
 - Rubriques : Personnage (+ Histoire), Vaillance / Sagesse / Points, Attributs (valeur 2 à 8, seuil calculé), 18 compétences (rang 0 à 6, case favorisée), Endurance, Espoir, États (Épuisé, Mélancolique, Blessé + blessure), Récompenses et Vertus, Combat (4 compétences de combat, attirail de guerre, armures, parade et protection avec totaux), Équipement de voyage et Trésor.
 - Données : clé `myrpgapp.characters` (liste de fiches), `myrpgapp.character-open` (dernière fiche ouverte, rouverte au démarrage). Une fiche abîmée ou ancienne est complétée par des valeurs sûres (`sanitizeCharacter`), jamais perdue en bloc.
 - Lien avec le lanceur : toucher le nom d'une compétence règle le lanceur (dés de Maîtrise = rang, SR = 20 − attribut, Favorisé si cochée, Épuisé / Mélancolique repris des états) et l'ouvre.
-- Bouton Retour : ferme une fenêtre, puis la fiche (retour à la liste), puis revient au lanceur.
-- Listes (0.10.0) : `src/characters/lists.ts`. **Uniquement des noms** relevés dans le livre de base (aucune description : dépôt public), testés (`characters.test.ts`). Une ancienne saisie libre n'est jamais perdue : elle reste proposée « (hors liste) ». Les défauts viennent de la voie de l'Ombre choisie (tous si aucune voie). Les vertus proposées sont les communes et celles de la culture. **À vérifier avec le livre** : le rattachement des défauts aux voies de l'Ombre (deux défauts seulement pour « Malédiction de vengeance »).
+- Bouton Retour : ferme une fenêtre, puis la fiche (retour à la liste), puis revient au lanceur. Depuis le lanceur ouvert par une compétence, Retour ramène à la fiche (`showScreen(id, retour)` dans nav.ts, décision `return-to-origin` dans backPolicy.ts).
+- Listes (0.10.0) : `src/characters/lists.ts`. **Uniquement des noms** relevés dans le livre de base (aucune description : dépôt public), testés (`characters.test.ts`). Le dernier choix « Autre (saisie libre)… » ouvre un champ pour une valeur hors livre ; une valeur hors liste s'affiche directement dans ce champ, elle n'est jamais perdue. Les défauts viennent de la voie de l'Ombre choisie (tous si aucune voie). Les vertus proposées sont les communes et celles de la culture. **À vérifier avec le livre** : le rattachement des défauts aux voies de l'Ombre (deux défauts seulement pour « Malédiction de vengeance »).
 - Limite connue : les données sont **seulement sur l'appareil** (vider les données du navigateur les efface). L'export / import JSON est prévu.
 
 ## Dépannage

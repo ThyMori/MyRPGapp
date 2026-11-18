@@ -28,26 +28,40 @@ export interface Groupe {
   options: string[]; // choix
 }
 
-// Remplit un <select> avec une entrée vide, puis les groupes. Une valeur absente des listes (ancienne saisie) est gardée en dernier choix : rien n'est perdu.
-function remplir(sel: HTMLSelectElement, valeur: string, groupes: Groupe[], vide: string): void {
+// Remplit un <select> avec une entrée vide, puis les groupes.
+function remplir(sel: HTMLSelectElement, groupes: Groupe[], vide: string): void {
   sel.appendChild(new Option(vide, '')); // entrée vide : rien choisi
   for (const g of groupes) {
     const parent: HTMLElement = g.titre ? sel.appendChild(h('optgroup')) : sel; // groupe ou menu lui-même
     if (g.titre) (parent as HTMLOptGroupElement).label = g.titre; // titre du groupe
     for (const o of g.options) parent.appendChild(new Option(o, o)); // un choix (textContent, jamais de HTML)
   }
-  if (valeur && !groupes.some((g) => g.options.includes(valeur))) sel.appendChild(new Option(`${valeur} (hors liste)`, valeur)); // valeur ancienne conservée
-  sel.value = valeur; // sélectionne la valeur actuelle
 }
 
-// Menu déroulant avec son libellé. onChange reçoit la valeur choisie ('' si on vide).
+const AUTRE = '__autre__'; // valeur interne du choix « saisie libre »
+
+// Menu déroulant avec son libellé. Le dernier choix, « Autre… », ouvre un champ pour écrire une valeur qui n'est pas dans le livre.
+// Une valeur déjà enregistrée hors des listes s'affiche directement dans ce champ. onChange reçoit la valeur ('' si vide).
 export function selectField(label: string, valeur: string, groupes: Groupe[], onChange: (v: string) => void, vide = '—'): HTMLElement {
   const lab = h('label', 'field field-select'); // enveloppe
   lab.appendChild(h('span', 'field-label', label)); // libellé
   const sel = h('select'); // menu
-  remplir(sel, valeur, groupes, vide);
-  sel.addEventListener('change', () => onChange(sel.value)); // à chaque choix
-  lab.appendChild(sel);
+  remplir(sel, groupes, vide);
+  sel.appendChild(new Option('Autre (saisie libre)…', AUTRE)); // dernier choix
+  const libre = h('input', 'field-libre'); // champ de saisie libre
+  libre.type = 'text';
+  libre.maxLength = 60;
+  libre.placeholder = 'Écris ta propre valeur';
+  libre.setAttribute('aria-label', `${label} : saisie libre`);
+  const connue = groupes.some((g) => g.options.includes(valeur)); // la valeur est-elle dans les listes ?
+  if (valeur && !connue) { sel.value = AUTRE; libre.value = valeur; } // valeur personnelle : affichée dans le champ
+  else { sel.value = valeur; libre.hidden = true; } // valeur de la liste (ou vide)
+  sel.addEventListener('change', () => {
+    if (sel.value === AUTRE) { libre.hidden = false; libre.focus(); onChange(libre.value); } // ouvre la saisie libre
+    else { libre.hidden = true; onChange(sel.value); } // choix de la liste
+  });
+  libre.addEventListener('input', () => onChange(libre.value)); // à chaque frappe
+  lab.append(sel, libre);
   return lab;
 }
 
@@ -56,7 +70,7 @@ export function pickField(label: string, groupes: Groupe[], onPick: (v: string) 
   const lab = h('label', 'field field-select'); // enveloppe
   lab.appendChild(h('span', 'field-label', label)); // libellé
   const sel = h('select'); // menu
-  remplir(sel, '', groupes, 'Ajouter…');
+  remplir(sel, groupes, 'Ajouter…');
   sel.addEventListener('change', () => {
     if (sel.value) onPick(sel.value); // transmet le choix
     sel.value = ''; // revient au titre

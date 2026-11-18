@@ -25,6 +25,7 @@ const LABELS_INFO: Record<InfoKey, string> = {
 let liste: Character[] = []; // toutes les fiches
 let ouvert: Character | null = null; // fiche en cours d'édition (null = on voit la liste)
 let minuteur = 0; // enregistrement différé
+let etatFiche: { ouvertes: boolean[]; haut: number } | null = null; // état de la fiche avant un lancer, rendu au retour
 let aSupprimer: string | null = null; // fiche dont la suppression attend confirmation
 
 // Identifiant unique d'une fiche.
@@ -107,8 +108,10 @@ function supprimer(): void {
 function lancer(c: Character, id: string): void {
   const s = rollSetup(c, id); // réglages
   if (!s) return; // inconnue
+  const zone = byId('character-sheet'); // zone de la fiche
+  etatFiche = { ouvertes: [...zone.querySelectorAll('details')].map((d) => d.open), haut: zone.scrollTop }; // retient sections ouvertes et position
   setRollInput(s.input); // règle le lanceur
-  showScreen('roller'); // y va
+  showScreen('roller', 'characters'); // y va ; « Retour » ramène à la fiche
   const etat = s.input.weary || s.input.miserable ? ` (${[s.input.weary ? 'Épuisé' : '', s.input.miserable ? 'Mélancolique' : ''].filter(Boolean).join(', ')})` : ''; // états repris
   showToast(`${s.label}${c.nom ? ` de ${c.nom}` : ''} : ${s.input.pool} dé${s.input.pool > 1 ? 's' : ''} de Maîtrise, SR ${s.input.targetNumber}${s.input.mode === 'favoured' ? ', Favorisé' : ''}${etat}. Touche Lancer.`); // dit ce qui a été réglé
 }
@@ -318,6 +321,12 @@ function afficher(): void {
   if (ouvert) {
     const corps = byId('character-sheet'); // zone de la fiche
     corps.replaceChildren(construireEditeur(ouvert)); // construit
+    if (etatFiche) { // retour d'un lancer : retrouve la fiche comme on l'a laissée
+      const e = etatFiche; // état retenu
+      etatFiche = null; // à usage unique
+      corps.querySelectorAll('details').forEach((d, i) => { d.open = e.ouvertes[i] ?? d.open; }); // mêmes sections ouvertes
+      corps.scrollTop = e.haut; // même position
+    }
     return;
   }
   const ul = byId('character-list'); // liste

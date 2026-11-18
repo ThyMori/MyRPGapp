@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.10.1 — 2026-11-18
+- Fiches : saisie libre dans les menus ; Retour depuis le lanceur ramène à la fiche
+
 ## 0.10.0 — 2026-11-18
 - Fiches : menus déroulants issus du livre (culture, vocation, particularités, défauts…)
 
