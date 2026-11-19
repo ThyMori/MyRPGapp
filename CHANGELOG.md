@@ -1,5 +1,8 @@
 # Journal des versions
 
+## 0.12.0 — 2026-11-19
+- Fiches : SR 18/20, section Départ en menus, calculs automatiques contournables, verrou avec valeurs de jeu surlignées
+
 ## 0.11.0 — 2026-11-18
 - Fiches : bouton « i » d'information (résumés de ma main + page du livre) ; défauts des voies de l'Ombre corrigés selon la table du livre
 

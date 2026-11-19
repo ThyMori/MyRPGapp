@@ -48,6 +48,10 @@ export function emptyCharacter(id: string, now: number): Character {
     armures: Array.from({ length: NB_ARMURES }, (): Armure => ({ nom: '', charge: '' })),
     parade: { base: 0, bouclier: 0, autre: 0 },
     protection: { armure: 0, casque: 0, autre: 0 },
+    srBase: 20,
+    auto: true, // une nouvelle fiche se calcule seule
+    verrou: false,
+    depart: { favCulture: '', favVocation: ['', ''], armePrincipale: '', armeSecondaire: '' },
   };
 }
 
@@ -73,6 +77,7 @@ export function sanitizeCharacter(raw: unknown): Character | null {
   const cb = obj(r.combat); // combat
   const par = obj(r.parade); // parade
   const pro = obj(r.protection); // protection
+  const dep = obj(r.depart); // choix de départ
   const cpt = (v: unknown) => entier(v, 0, NB_RAPPEL, 0); // compteur 0..99
   return {
     id: base.id,
@@ -111,6 +116,10 @@ export function sanitizeCharacter(raw: unknown): Character | null {
     }),
     parade: { base: cpt(par.base), bouclier: cpt(par.bouclier), autre: cpt(par.autre) },
     protection: { armure: cpt(pro.armure), casque: cpt(pro.casque), autre: cpt(pro.autre) },
+    srBase: r.srBase === 18 ? 18 : 20, // 20 sauf demande explicite de 18
+    auto: r.auto === true, // une ancienne fiche garde ses valeurs : calculs coupés tant qu'on ne les active pas
+    verrou: r.verrou === true,
+    depart: { favCulture: texte(dep.favCulture, 30), favVocation: [texte(Array.isArray(dep.favVocation) ? dep.favVocation[0] : '', 30), texte(Array.isArray(dep.favVocation) ? dep.favVocation[1] : '', 30)], armePrincipale: texte(dep.armePrincipale, 30), armeSecondaire: texte(dep.armeSecondaire, 30) },
   };
 }
 

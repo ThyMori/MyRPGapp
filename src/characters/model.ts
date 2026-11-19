@@ -110,6 +110,17 @@ export interface Etats {
   blesse: boolean; // Blessé
 }
 
+// Les choix faits dans la section « Départ » (menus qui remplissent la fiche d'après le livre).
+export interface Depart {
+  favCulture: string; // compétence favorite choisie parmi les deux de la culture
+  favVocation: [string, string]; // deux compétences favorites choisies parmi les trois de la vocation
+  armePrincipale: string; // arme de combat au rang 2
+  armeSecondaire: string; // arme de combat au rang 1
+}
+
+// Valeurs permises du seuil de réussite : 20 (campagne) ou 18 (scénario court).
+export const SR_CHOIX = [20, 18] as const;
+
 // Une fiche de personnage complète.
 export interface Character {
   id: string; // identifiant unique
@@ -139,4 +150,8 @@ export interface Character {
   armures: Armure[]; // armures
   parade: { base: number; bouclier: number; autre: number }; // parade
   protection: { armure: number; casque: number; autre: number }; // protection
+  srBase: number; // seuil de réussite = srBase − attribut (20 ou 18)
+  auto: boolean; // calculs automatiques (maximums, parade, états)
+  verrou: boolean; // verrou : seules les valeurs de jeu restent modifiables
+  depart: Depart; // choix de la section « Départ »
 }

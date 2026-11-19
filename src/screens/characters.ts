@@ -3,6 +3,7 @@
 import { ATTRS, ATTR_MAX, ATTR_MIN, COMBAT_SKILLS, NB_DEFAUTS, NB_PARTICULARITES, RANG_MAX, SKILLS, type Character, type InfoKey } from '../characters/model'; // modèle
 import { CULTURES, GARANTS, NIVEAUX_VIE, RECOMPENSES_DEPART, VERTUS_COMMUNES, VOCATIONS, VOIES, defautsPour, findCulture, particularitesPour, reglagesCulture, reglagesVocation } from '../characters/lists'; // listes du livre
 import { rollSetup, seuilReussite, totalParade, totalProtection } from '../characters/derive'; // calculs
+import { COMPETENCES_VOCATION, appliquerAuto, appliquerCombat, appliquerFavorites, appliquerJeu, appliquerRangs, departDe, derivees, jeuActuel, libelleJeu, tresorDeDepart } from '../characters/depart'; // départ et calculs automatiques
 import { emptyCharacter, sanitizeCharacter } from '../characters/sanitize'; // fiches
 import { loadCharacters, saveCharacters } from '../state/characters'; // stockage
 import { loadJson, saveJson } from '../state/storage'; // dernière fiche ouverte
@@ -10,7 +11,7 @@ import { byId } from '../ui/dom'; // éléments
 import { openDialog } from '../ui/dialogs'; // fenêtres
 import type { Categorie } from '../characters/details'; // catégories des boutons « i »
 import { onScreenShown, showScreen } from '../ui/nav'; // navigation
-import { areaField, checkField, counter, dots, h, pickField, scale, section, selectField, textField, type Groupe } from '../ui/sheetFields'; // champs
+import { areaField, calcule, checkField, choixField, counter, dots, h, pickField, scale, section, selectField, textField, vivant, type Groupe } from '../ui/sheetFields'; // champs
 import { showToast } from '../ui/toast'; // messages
 import { setRollInput } from './roller'; // règle le lanceur
 
@@ -45,9 +46,19 @@ function enregistrer(): void {
   if (!saveCharacters(liste)) showToast("Impossible d'enregistrer : le stockage de l'appareil est plein ou bloqué.", 'error'); // dit quoi faire
 }
 
+// Empreinte des valeurs touchées par les calculs automatiques (pour savoir s'il faut redessiner).
+function signatureAuto(c: Character): string {
+  return JSON.stringify([c.endurance, c.espoir, c.parade.base, c.etats]); // maximums, valeurs actuelles, parade, états
+}
+
 // Appelé à chaque modification : met la date à jour et enregistre peu après (évite d'écrire à chaque lettre).
 function modifie(): void {
-  if (ouvert) ouvert.modifieLe = Date.now(); // date de modification
+  if (ouvert) {
+    const avant = signatureAuto(ouvert); // valeurs que les calculs peuvent changer
+    appliquerAuto(ouvert); // calculs automatiques (sans effet s'ils sont coupés)
+    if (signatureAuto(ouvert) !== avant) reconstruire(); // affiche les valeurs recalculées
+    ouvert.modifieLe = Date.now(); // date de modification
+  }
   window.clearTimeout(minuteur); // repart de zéro
   minuteur = window.setTimeout(enregistrer, 300); // écrit dans 0,3 s
 }
@@ -149,11 +160,18 @@ function construireEditeur(c: Character): HTMLElement {
   const culture = liste('culture', CULTURES.map((x) => x.nom), (v) => {
     const r = reglagesCulture(v); // avantage et niveau de vie liés à la culture
     if (r) { c.info.avantage = r.avantage; c.info.niveauVie = r.niveauVie; } // les remplit (modifiables ensuite)
+    const d = departDe(c); // départ de la nouvelle culture
+    if (!d?.favorisables.includes(c.depart.favCulture)) c.depart.favCulture = ''; // l'ancien choix n'existe plus
+    if (!d?.armes.includes(c.depart.armePrincipale)) c.depart.armePrincipale = ''; // idem pour l'arme principale
+    appliquerFavorites(c); // recalcule les favorites
     reconstruire(); // redessine : les particularités proposées changent
   });
   const vocation = liste('vocation', VOCATIONS.map((x) => x.nom), (v) => {
     const r = reglagesVocation(v); // voie de l'Ombre et particularité liées à la vocation
     if (r) { c.info.voieOmbre = r.voie; c.particularites[NB_PARTICULARITES - 1] = r.particularite; } // les remplit (modifiables ensuite)
+    const trio = COMPETENCES_VOCATION[v] ?? []; // compétences de la nouvelle vocation
+    c.depart.favVocation = [c.depart.favVocation[0], c.depart.favVocation[1]].map((x) => (trio.includes(x) ? x : '')) as [string, string]; // garde les choix encore valables
+    appliquerFavorites(c); // recalcule les favorites
     reconstruire(); // redessine : les défauts proposés changent
   });
   const lignesPart = Array.from({ length: NB_PARTICULARITES }, (_, i) => {
@@ -168,6 +186,9 @@ function construireEditeur(c: Character): HTMLElement {
     areaField('Histoire', c.histoire, (v) => { c.histoire = v; modifie(); }, 4000),
   ));
 
+  // Départ : menus qui remplissent la fiche d'après les tableaux du livre
+  racine.appendChild(departSection(c));
+
   // Compteurs de progression
   const cpt = (label: string, get: () => number, set: (v: number) => void, aide?: string) => counter(label, get(), 0, 99, (v) => { set(v); modifie(); }, aide); // compteur 0..99
   racine.appendChild(section('Vaillance, Sagesse et points', false,
@@ -175,11 +196,11 @@ function construireEditeur(c: Character): HTMLElement {
   ));
   const pts = racine.lastElementChild!.querySelector('.grid2')!; // grille à remplir
   pts.append(
-    cpt('Vaillance', () => c.vaillance, (v) => (c.vaillance = v), `SR Cœur : ${seuilReussite(c.attrs.coeur)}`),
-    cpt('Sagesse', () => c.sagesse, (v) => (c.sagesse = v), `SR Esprit : ${seuilReussite(c.attrs.esprit)}`),
-    cpt("Points d'Aventure", () => c.aventure, (v) => (c.aventure = v)),
-    cpt('Points de Progression', () => c.progression, (v) => (c.progression = v)),
-    cpt('Points de Communauté', () => c.communaute, (v) => (c.communaute = v)),
+    cpt('Vaillance', () => c.vaillance, (v) => (c.vaillance = v), `SR Cœur : ${seuilReussite(c.attrs.coeur, c.srBase)}`),
+    cpt('Sagesse', () => c.sagesse, (v) => (c.sagesse = v), `SR Esprit : ${seuilReussite(c.attrs.esprit, c.srBase)}`),
+    vivant(cpt("Points d'Aventure", () => c.aventure, (v) => (c.aventure = v))),
+    vivant(cpt('Points de Progression', () => c.progression, (v) => (c.progression = v))),
+    vivant(cpt('Points de Communauté', () => c.communaute, (v) => (c.communaute = v))),
   );
 
   // Attributs
@@ -188,18 +209,19 @@ function construireEditeur(c: Character): HTMLElement {
     const num = h('span', 'sr-num'); // seuil calculé, dans le cadre en losange
     const cadre = h('div', 'sr-diamond'); // cadre du seuil
     cadre.appendChild(num);
-    const maj = () => { num.textContent = String(seuilReussite(c.attrs[a.id])); }; // met à jour le nombre
+    const maj = () => { num.textContent = String(seuilReussite(c.attrs[a.id], c.srBase)); }; // met à jour le nombre
     bloc.append(
       h('h4', '', a.label),
       scale(`Valeur de ${a.label}`, c.attrs[a.id], ATTR_MIN, ATTR_MAX, (v) => { c.attrs[a.id] = v; maj(); modifie(); }, { 2: 'Faible', 4: 'Moyen', 6: 'Bon', 8: 'Excellent' }), // valeur
       cadre,
       h('p', 'sr-label', `Seuil de Réussite de ${a.label}`),
-      h('p', 'sr-formula', '20 − Valeur'),
+      h('p', 'sr-formula', `${c.srBase} − Valeur`),
     );
     maj();
     return bloc;
   });
-  racine.appendChild(section('Attributs', true, ...attrs));
+  const choixSr = choixField('Seuil de réussite', String(c.srBase), [{ valeur: '20', label: '20 − attribut (campagne)' }, { valeur: '18', label: '18 − attribut (scénario court)' }], (v) => { c.srBase = v === '18' ? 18 : 20; reconstruire(); modifie(); }, '20 − attribut (campagne)', 'Par défaut le seuil vaut 20 moins l’attribut. Pour une campagne courte ou un scénario isolé, le livre propose 18 moins l’attribut : les jets sont alors plus difficiles. Le lanceur de dés en tient compte.', 18); // 20 ou 18
+  racine.appendChild(section('Attributs', true, choixSr, ...attrs));
 
   // Compétences
   const comps: HTMLElement[] = [h('p', 'sheet-hint', "Touche le nom d'une compétence pour régler le lanceur de dés. La case de gauche marque une compétence favorisée.")]; // aide
@@ -214,20 +236,20 @@ function construireEditeur(c: Character): HTMLElement {
   // Endurance et espoir
   const num = (label: string, o: Record<string, number>, k: string) => counter(label, o[k], 0, 99, (v) => { o[k] = v; modifie(); }); // compteur d'un objet
   const g1 = h('div', 'grid2');
-  g1.append(num('Maximum', c.endurance as unknown as Record<string, number>, 'max'), num('Actuelle', c.endurance as unknown as Record<string, number>, 'actuelle'), num('Charge', c.endurance as unknown as Record<string, number>, 'charge'), num('Fatigue', c.endurance as unknown as Record<string, number>, 'fatigue'));
+  g1.append(calcule(num('Maximum', c.endurance as unknown as Record<string, number>, 'max'), c.auto && !!derivees(c)), vivant(num('Actuelle', c.endurance as unknown as Record<string, number>, 'actuelle')), vivant(num('Charge', c.endurance as unknown as Record<string, number>, 'charge')), vivant(num('Fatigue', c.endurance as unknown as Record<string, number>, 'fatigue')));
   racine.appendChild(section('Endurance', true, g1));
   const g2 = h('div', 'grid2');
-  g2.append(num('Maximum', c.espoir as unknown as Record<string, number>, 'max'), num('Actuel', c.espoir as unknown as Record<string, number>, 'actuelle'), num('Ombre', c.espoir as unknown as Record<string, number>, 'ombre'), num('Séquelles', c.espoir as unknown as Record<string, number>, 'sequelles'));
+  g2.append(calcule(num('Maximum', c.espoir as unknown as Record<string, number>, 'max'), c.auto && !!derivees(c)), vivant(num('Actuel', c.espoir as unknown as Record<string, number>, 'actuelle')), vivant(num('Ombre', c.espoir as unknown as Record<string, number>, 'ombre')), vivant(num('Séquelles', c.espoir as unknown as Record<string, number>, 'sequelles')));
   racine.appendChild(section('Espoir', true, g2));
 
   // États
   racine.appendChild(section('États', true,
-    h('p', 'sheet-hint', 'Épuisé et Mélancolique sont repris automatiquement dans le lanceur de dés.'),
+    h('p', 'sheet-hint', c.auto ? 'Épuisé (Endurance actuelle ≤ Charge + Fatigue) et Mélancolique (Ombre ≥ Espoir actuel) se cochent tout seuls. Ils sont repris dans le lanceur de dés.' : 'Épuisé et Mélancolique sont repris automatiquement dans le lanceur de dés.'),
     h('div', 'toggles'),
-    areaField('Blessure', c.blessure, (v) => { c.blessure = v; modifie(); }, 300),
+    vivant(areaField('Blessure', c.blessure, (v) => { c.blessure = v; modifie(); }, 300)),
   ));
   const tg = racine.lastElementChild!.querySelector('.toggles')!; // cases des états
-  tg.append(checkField('Épuisé', c.etats.epuise, (v) => { c.etats.epuise = v; modifie(); }), checkField('Mélancolique', c.etats.melancolique, (v) => { c.etats.melancolique = v; modifie(); }), checkField('Blessé', c.etats.blesse, (v) => { c.etats.blesse = v; modifie(); }));
+  tg.append(vivant(calcule(checkField('Épuisé', c.etats.epuise, (v) => { c.etats.epuise = v; modifie(); }), c.auto)), vivant(calcule(checkField('Mélancolique', c.etats.melancolique, (v) => { c.etats.melancolique = v; modifie(); }), c.auto)), vivant(checkField('Blessé', c.etats.blesse, (v) => { c.etats.blesse = v; modifie(); })));
 
   // Récompenses et vertus
   const zoneRv = areaField('Récompenses et Vertus', c.recompenses, (v) => { c.recompenses = v; modifie(); }); // texte libre
@@ -238,7 +260,7 @@ function construireEditeur(c: Character): HTMLElement {
   }; // ajoute un choix au texte
   const culRv = findCulture(c.info.culture); // culture du héros
   const groupesVertus: Groupe[] = [{ titre: 'Vertus communes', options: VERTUS_COMMUNES }, ...(culRv ? [{ titre: `Vertus : ${culRv.nom}`, options: culRv.vertus }] : CULTURES.map((x) => ({ titre: `Vertus : ${x.nom}`, options: x.vertus })))]; // vertus communes + celles de la culture (toutes si aucune culture)
-  racine.appendChild(section('Récompenses et Vertus', false, zoneRv, pickField('Ajouter une Récompense', [{ options: RECOMPENSES_DEPART }], ajoute, () => 'recompense'), pickField('Ajouter une Vertu', groupesVertus, ajoute, () => 'vertu')));
+  racine.appendChild(section('Récompenses et Vertus', false, vivant(zoneRv), vivant(pickField('Ajouter une Récompense', [{ options: RECOMPENSES_DEPART }], ajoute, () => 'recompense')), vivant(pickField('Ajouter une Vertu', groupesVertus, ajoute, () => 'vertu'))));
 
   // Combat
   const cb: HTMLElement[] = [h('h4', 'skill-group', 'Compétences de combat (SR Corps)')];
@@ -253,29 +275,89 @@ function construireEditeur(c: Character): HTMLElement {
       textField('Charge', a.charge, (v) => { a.charge = v; modifie(); }, 20),
       textField('Notes', a.notes, (v) => { a.notes = v; modifie(); }, 120),
     );
-    cb.push(bloc);
+    cb.push(vivant(bloc));
   });
   cb.push(h('h4', 'skill-group', 'Armure'));
   c.armures.forEach((a, i) => {
     const bloc = h('div', 'gear'); // une pièce
     bloc.append(textField(`Pièce ${i + 1}`, a.nom, (v) => { a.nom = v; modifie(); }, 60), textField('Charge', a.charge, (v) => { a.charge = v; modifie(); }, 20));
-    cb.push(bloc);
+    cb.push(vivant(bloc));
   });
   const totP = h('p', 'attr-sr'); // total de parade
   const totR = h('p', 'attr-sr'); // total de protection
   const majTot = () => { totP.textContent = `Parade : ${totalParade(c)}`; totR.textContent = `Protection : ${totalProtection(c)}`; }; // met à jour les totaux
   const nm = (label: string, o: Record<string, number>, k: string) => counter(label, o[k], 0, 99, (v) => { o[k] = v; majTot(); modifie(); }); // compteur qui recalcule
   const gp = h('div', 'grid2');
-  gp.append(nm('Parade : base', c.parade as unknown as Record<string, number>, 'base'), nm('Parade : bouclier', c.parade as unknown as Record<string, number>, 'bouclier'), nm('Parade : autre', c.parade as unknown as Record<string, number>, 'autre'));
+  gp.append(calcule(nm('Parade : base', c.parade as unknown as Record<string, number>, 'base'), c.auto && !!derivees(c)), vivant(nm('Parade : bouclier', c.parade as unknown as Record<string, number>, 'bouclier')), vivant(nm('Parade : autre', c.parade as unknown as Record<string, number>, 'autre')));
   const gr = h('div', 'grid2');
-  gr.append(nm('Protection : armure', c.protection as unknown as Record<string, number>, 'armure'), nm('Protection : casque', c.protection as unknown as Record<string, number>, 'casque'), nm('Protection : autre', c.protection as unknown as Record<string, number>, 'autre'));
+  gr.append(vivant(nm('Protection : armure', c.protection as unknown as Record<string, number>, 'armure')), vivant(nm('Protection : casque', c.protection as unknown as Record<string, number>, 'casque')), vivant(nm('Protection : autre', c.protection as unknown as Record<string, number>, 'autre')));
   majTot();
   cb.push(h('h4', 'skill-group', 'Parade et protection'), gp, totP, gr, totR);
   racine.appendChild(section('Combat', false, ...cb));
 
   // Équipement et trésor
-  racine.appendChild(section('Équipement de voyage', false, areaField('Équipement de voyage', c.equipement, (v) => { c.equipement = v; modifie(); }), counter('Trésor', c.tresor, 0, 9999, (v) => { c.tresor = v; modifie(); })));
+  racine.appendChild(section('Équipement de voyage', false, vivant(areaField('Équipement de voyage', c.equipement, (v) => { c.equipement = v; modifie(); })), vivant(counter('Trésor', c.tresor, 0, 9999, (v) => { c.tresor = v; modifie(); }))));
+  appliquerVerrou(racine, c); // verrou et champs calculés
   return racine;
+}
+
+// Section « Départ » : des menus qui remplissent la fiche d'après les tableaux du livre (tout reste modifiable à la main).
+function departSection(c: Character): HTMLElement {
+  const lib = (id: string) => [...SKILLS, ...COMBAT_SKILLS].find((x) => x.id === id)?.label ?? id; // libellé d'une compétence
+  const opt = (ids: readonly string[]) => ids.map((id) => ({ valeur: id, label: lib(id) })); // options d'après des identifiants
+  const apres = () => { reconstruire(); modifie(); }; // redessine et enregistre
+  const d = departDe(c); // départ de la culture (undefined si aucune)
+  const vocTrio = COMPETENCES_VOCATION[c.info.vocation]; // compétences proposées par la vocation
+  const bloc: HTMLElement[] = [];
+  bloc.push(checkField('Calculs automatiques', c.auto, (v) => { c.auto = v; apres(); }));
+  bloc.push(h('p', 'sheet-hint', c.auto ? 'Endurance et Espoir maximums, Parade de base, Épuisé et Mélancolique sont calculés d’après la culture, les attributs et tes valeurs de jeu. Décoche pour tout régler toi-même.' : 'Calculs coupés : tout se règle à la main.'));
+  if (!d) {
+    bloc.push(h('p', 'sheet-hint', 'Choisis une culture du livre (section Personnage) pour proposer les jeux d’attributs, les compétences et les armes de départ.'));
+  } else {
+    bloc.push(choixField('Jeu d’attributs', String(jeuActuel(c) || ''), d.jeux.map((x, i) => ({ valeur: String(i + 1), label: libelleJeu(x, i + 1) })), (v) => { if (v) appliquerJeu(c, Number(v)); apres(); }, 'Libre (je règle moi-même)', 'Le livre propose six jeux d’attributs par culture, un par face du dé de Maîtrise : choisis-en un (ou tire un dé) et les trois attributs se règlent. « Libre » laisse tes valeurs.', 33));
+    bloc.push(choixField('Compétence favorite de la culture', c.depart.favCulture, opt(d.favorisables), (v) => { c.depart.favCulture = v; appliquerFavorites(c); apres(); }, '—', 'La culture propose deux compétences ; une des deux est favorite (case cochée dans la section Compétences).', 33));
+  }
+  if (vocTrio) {
+    for (const n of [0, 1] as const) {
+      bloc.push(choixField(`Compétence favorite de la vocation ${n + 1}`, c.depart.favVocation[n], opt(vocTrio).filter((o) => o.valeur !== c.depart.favVocation[1 - n]), (v) => { c.depart.favVocation[n] = v; appliquerFavorites(c); apres(); }, '—', n === 0 ? 'La vocation propose trois compétences ; tu en choisis deux comme favorites.' : undefined, 44));
+    }
+  } else bloc.push(h('p', 'sheet-hint', 'Choisis une vocation du livre pour proposer ses compétences favorites.'));
+  if (d) {
+    bloc.push(choixField('Arme de combat (rang 2)', c.depart.armePrincipale, opt(d.armes), (v) => { c.depart.armePrincipale = v; if (c.depart.armeSecondaire === v) c.depart.armeSecondaire = ''; appliquerCombat(c); apres(); }, '—', 'La culture donne le rang 2 à une des deux armes proposées.', 33));
+    bloc.push(choixField('Seconde arme (rang 1)', c.depart.armeSecondaire, opt(COMBAT_SKILLS.map((x) => x.id).filter((id) => id !== c.depart.armePrincipale)), (v) => { c.depart.armeSecondaire = v; appliquerCombat(c); apres(); }, '—', 'Une compétence de combat de ton choix reçoit le rang 1.', 33));
+    const bouton = h('button', 'btn', 'Remettre les compétences au départ de la culture'); // remplit les 18 rangs
+    bouton.type = 'button';
+    bouton.addEventListener('click', () => {
+      appliquerRangs(c); // rangs du livre
+      appliquerFavorites(c); // favorites choisies
+      const t = tresorDeDepart(c.info.niveauVie); // trésor du niveau de vie
+      if (t !== null) c.tresor = t; // trésor de départ
+      apres();
+      showToast('Compétences et trésor remis aux valeurs de départ.', 'ok');
+    });
+    bloc.push(bouton);
+  }
+  return section('Départ (création)', false, ...bloc);
+}
+
+// Applique le verrou (seules les valeurs de jeu restent modifiables) et grise les champs calculés.
+function appliquerVerrou(racine: HTMLElement, c: Character): void {
+  racine.classList.toggle('verrou', c.verrou); // aspect verrouillé
+  for (const el of racine.querySelectorAll<HTMLElement>('input, select, textarea, button')) {
+    const calcule = el.closest('[data-auto]') !== null; // champ calculé (grisé tant que le calcul est actif)
+    const libre = el.closest('[data-live]') !== null || el.matches('.info-btn, .skill-name'); // valeur de jeu, aide ou lancer : toujours utilisables
+    el.inert = calcule || (c.verrou && !libre); // inerte = ni clic ni focus
+  }
+}
+
+// Texte et état du bouton de verrou dans la barre de l'éditeur.
+function majBoutonVerrou(): void {
+  const b = byId<HTMLButtonElement>('btn-char-lock'); // bouton
+  b.hidden = ouvert === null; // seulement dans l'éditeur
+  if (!ouvert) return;
+  b.textContent = ouvert.verrou ? '🔒 Verrouillée' : '🔓 Modifiable'; // état affiché
+  b.setAttribute('aria-pressed', String(ouvert.verrou)); // état pour les lecteurs d'écran
+  b.classList.toggle('btn-primary', ouvert.verrou); // mis en avant quand verrouillée
 }
 
 // Cherche une voie de l'Ombre par son nom.
@@ -292,6 +374,7 @@ function reconstruire(): void {
   zone.replaceChildren(construireEditeur(ouvert)); // reconstruit
   zone.querySelectorAll('details').forEach((d, i) => { d.open = ouvertes[i] ?? d.open; }); // rouvre les mêmes
   zone.scrollTop = haut; // revient à la même position
+  majBoutonVerrou(); // état du bouton de verrou
 }
 
 // Une carte de la liste.
@@ -320,6 +403,7 @@ function afficher(): void {
   vueListe.hidden = ouvert !== null; // liste cachée si on édite
   vueEdit.hidden = ouvert === null; // éditeur caché sinon
   byId('btn-char-back').hidden = ouvert === null; // bouton « Liste » seulement dans l'éditeur
+  majBoutonVerrou(); // bouton de verrou
   if (ouvert) {
     const corps = byId('character-sheet'); // zone de la fiche
     corps.replaceChildren(construireEditeur(ouvert)); // construit
@@ -342,6 +426,7 @@ export function initCharacters(): void {
   byId('btn-char-new').addEventListener('click', creer); // « Nouveau personnage »
   byId('btn-char-new-empty').addEventListener('click', creer); // même action depuis l'état vide
   byId('btn-char-back').addEventListener('click', closeCharacter); // retour à la liste
+  byId('btn-char-lock').addEventListener('click', () => { if (!ouvert) return; ouvert.verrou = !ouvert.verrou; modifie(); reconstruire(); showToast(ouvert.verrou ? 'Fiche verrouillée : seules les valeurs de jeu (surlignées) se modifient.' : 'Fiche déverrouillée : tout est modifiable.'); }); // bascule le verrou
   byId('btn-delete-char-ok').addEventListener('click', () => { supprimer(); byId<HTMLDialogElement>('dialog-delete-char').close(); }); // confirme
   byId<HTMLDialogElement>('dialog-delete-char').addEventListener('close', () => { aSupprimer = null; }); // annule si fermée autrement
   window.addEventListener('pagehide', enregistrer); // rien ne se perd si l'app est fermée

@@ -59,6 +59,8 @@
   --ink-red-deep: hsl(351 60% 36%); /* rouge foncé (survol, texte sur fond clair) */
   --ink-text: hsl(20 22% 17%); /* texte des libellés */
   --ink-dim: hsl(20 10% 40%); /* petits textes, aides */
+  --live-bg: hsl(45 90% 85% / 0.55); /* fond des valeurs de jeu quand la fiche est verrouillée */
+  --live-line: hsl(40 80% 55% / 0.8); /* contour de ces valeurs */
   --pencil: hsl(220 10% 26%); /* graphite du crayon : écriture à la main et croix des cases */
   --font-hand: 'Caveat', 'Segoe Print', cursive; /* écriture manuscrite pour tout ce que le joueur remplit */
   --font-sheet-title: 'Almendra SC', 'Cormorant Garamond', Georgia, serif; /* titres de la fiche (police libre proche de celle de la fiche papier) */

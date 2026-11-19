@@ -114,6 +114,38 @@ export function pickField(label: string, groupes: Groupe[], onPick: (v: string) 
   return lab;
 }
 
+// Marque un champ comme « valeur de jeu » : il reste modifiable quand la fiche est verrouillée, et il est mis en avant.
+export function vivant<T extends HTMLElement>(el: T): T {
+  el.dataset.live = '1'; // repéré par le verrou
+  el.classList.add('live'); // surlignage quand la fiche est verrouillée
+  return el;
+}
+
+// Marque un champ calculé automatiquement (grisé tant que les calculs automatiques sont actifs).
+export function calcule<T extends HTMLElement>(el: T, actif: boolean): T {
+  if (!actif) return el; // calculs coupés : champ libre
+  el.dataset.auto = '1'; // repéré par le verrou
+  el.classList.add('auto'); // aspect « calculé »
+  return el;
+}
+
+// Menu à choix fermé (pas de saisie libre) avec libellé et « i » facultatif. onChange reçoit la valeur choisie ('' pour le choix vide).
+export function choixField(label: string, valeur: string, options: { valeur: string; label: string }[], onChange: (v: string) => void, vide = '—', aide?: string, page?: number): HTMLElement {
+  const lab = h('div', 'field field-select'); // enveloppe
+  const entete = h('div', 'field-head'); // ligne libellé + « i »
+  entete.appendChild(h('span', 'field-label', label)); // libellé
+  if (aide) entete.appendChild(boutonInfo(label, () => montrerInfos(label, [{ texte: aide, page }]))); // explication
+  lab.appendChild(entete);
+  const sel = h('select'); // menu
+  sel.setAttribute('aria-label', label); // nom accessible
+  sel.appendChild(new Option(vide, '')); // choix vide
+  for (const o of options) sel.appendChild(new Option(o.label, o.valeur)); // options
+  sel.value = options.some((o) => o.valeur === valeur) ? valeur : ''; // valeur connue, sinon vide
+  sel.addEventListener('change', () => onChange(sel.value)); // transmet
+  lab.appendChild(sel);
+  return lab;
+}
+
 // Champ de texte long (qui s'agrandit seul) avec son libellé.
 export function areaField(label: string, valeur: string, onChange: (v: string) => void, max = 2000): HTMLElement {
   const lab = h('label', 'field'); // enveloppe

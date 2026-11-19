@@ -1,13 +1,13 @@
 // Valeurs calculées à partir d'une fiche, et réglages du lanceur de dés. Logique pure.
-// ⚠ Seuil de réussite = 20 − valeur de l'attribut : formule lue sur la fiche papier, à confirmer avec le livre.
+// Seuil de réussite = 20 − valeur de l'attribut (campagne), ou 18 − valeur pour un scénario court (livre, p.18).
 import { COMBAT_SKILLS, SKILLS, type AttrId, type Character } from './model'; // modèle
 import { normalizeInput, type RollInput } from '../rules/tor'; // réglages de jet
 
-export const SR_BASE = 20; // 20 − valeur = seuil de réussite
+export const SR_BASE = 20; // base par défaut
 
-// Seuil de réussite d'un attribut.
-export function seuilReussite(valeur: number): number {
-  return SR_BASE - valeur; // plus la valeur est haute, plus le seuil est bas
+// Seuil de réussite d'un attribut (base 20, ou 18 en scénario court).
+export function seuilReussite(valeur: number, base: number = SR_BASE): number {
+  return base - valeur; // plus la valeur est haute, plus le seuil est bas
 }
 
 // Total de la parade (base + bouclier + autre).
@@ -41,7 +41,7 @@ export function rollSetup(c: Character, skillId: string): RollSetup | null {
       mode: favorisee ? 'favoured' : 'normal',
       weary: c.etats.epuise,
       miserable: c.etats.melancolique,
-      targetNumber: seuilReussite(c.attrs[attr]),
+      targetNumber: seuilReussite(c.attrs[attr], c.srBase),
     }),
   };
 }

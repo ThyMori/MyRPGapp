@@ -614,3 +614,22 @@
   overflow-y: auto;
 }
 .info-note{margin-top:.6rem}
+
+/* Verrou : les champs figés sont estompés, les valeurs de jeu sont surlignées. */
+#screen-characters .sheet.verrou [inert]:not(.info-btn) {
+  opacity: 0.55;
+}
+#screen-characters .sheet.verrou .live {
+  background: var(--live-bg);
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px var(--live-line);
+}
+#screen-characters .sheet .auto {
+  opacity: 0.75;
+}
+#screen-characters .sheet .auto .field-label::after {
+  content: ' (auto)';
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
